@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --defualt-text: #444444;
+  --gray-10: #f8fafc;
+  --gray-50: #bababa;
+  --gray-100: #798498;
+  --gray-200: #F0F0F0;
+  --brown-100: #d3966c;
+  --brown-yellow-5: #fff9e9;
+  --red-100: #ef3c39;
+}
+
+@keyframes dialog-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.88) translateY(20px);
+  }
+  70% {
+    transform: scale(1.03) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dialog-icon-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@theme inline {
+  --font-sans: var(--font-noto-sans-thai);
+
+  --animate-dialog-backdrop-in: dialog-backdrop-in 0.25s ease-out forwards;
+  --animate-dialog-pop-in: dialog-pop-in 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+  --animate-dialog-icon-in: dialog-icon-in 0.45s cubic-bezier(0.34, 1.4, 0.64, 1) 0.12s both;
+
+  --color-background: var(--background);
+  --color-defualt-text: var(--defualt-text);
+  --color-gray-10: var(--gray-10);
+  --color-gray-50: var(--gray-50);
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-brown-100: var(--brown-100);
+  --color-brown-yellow-5: var(--brown-yellow-5);
+  --color-red-100: var(--red-100);
+}
+
+body {
+  background: var(--background);
+  color: var(--defualt-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+html.receipt-pos-mode [data-app-chrome] {
+  display: none !important;
+}
+
+html.receipt-pos-mode main {
+  padding-top: 0 !important;
+}
