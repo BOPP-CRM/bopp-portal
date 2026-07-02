@@ -149,7 +149,7 @@ export default function Menu() {
       />
 
       <div
-        className={`bg-white min-h-screen overflow-scroll shrink-0 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 w-66 -translate-x-full md:static md:translate-x-0 md:transition-[width]${isMobileOpen ? " translate-x-0" : ""}${isCollapsed ? " md:w-20" : " md:w-66"}`}
+        className={`bg-white min-h-screen overflow-y-auto shrink-0 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 w-66 -translate-x-full md:sticky md:top-0 md:h-screen md:self-start md:translate-x-0 md:transition-[width]${isMobileOpen ? " translate-x-0" : ""}${isCollapsed ? " md:w-20" : " md:w-66"}`}
       >
         <div
           className={`flex items-center gap-2 transition-all duration-300 ease-in-out justify-between p-6 pb-7${isCollapsed ? " md:flex-col md:justify-center md:px-4 md:py-6 md:gap-4" : ""}`}

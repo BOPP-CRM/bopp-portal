@@ -15,7 +15,7 @@ export default function RootLayout({
       <RoleGuard>
         <ReceiptPosModeShell>
           <div className="md:flex min-h-screen">
-            <div data-app-chrome>
+            <div data-app-chrome className="md:self-start">
               <Menu />
             </div>
             <div className="flex-1 flex flex-col min-w-0">
