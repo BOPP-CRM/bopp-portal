@@ -59,6 +59,7 @@ export type DashboardResponse = {
   date_to: string;
   granularity: DashboardGranularity;
   members_by_tier: MembersByTierItem[];
+  new_members_today: number;
   user_registrations: PeriodCountItem[];
   user_registrations_by_hour: HourCountItem[];
   receipt_amounts: ReceiptAmountItem[];

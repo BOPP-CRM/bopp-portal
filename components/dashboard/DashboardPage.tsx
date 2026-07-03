@@ -1,20 +1,15 @@
 "use client";
 
-import Select from "@/components/util/Select";
 import { Skeleton } from "@/components/util/Skeleton";
 import { getDashboard } from "@/services/dashboard/dashboard";
 import type {
   CouponByNameItem,
-  DashboardGranularity,
   DashboardResponse,
   MembersByTierItem,
 } from "@/services/dashboard/types";
 import {
   formatChartPeriodLabel,
-  formatDateTime,
   getThaiDateInputValue,
-  toApiDateEndFromDateInput,
-  toApiDateStartFromDateInput,
 } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
@@ -53,12 +48,6 @@ const TIER_COLORS = [
   "#95CEF9",
   "#9B288F",
   "#6A7282",
-];
-
-const GRANULARITY_OPTIONS = [
-  { value: "day" as const, label: "รายวัน" },
-  { value: "week" as const, label: "รายสัปดาห์" },
-  { value: "month" as const, label: "รายเดือน" },
 ];
 
 const COUPON_STATUS_COLORS = {
@@ -240,6 +229,7 @@ function normalizeDashboardResponse(
     date_to: response.date_to ?? "",
     granularity: response.granularity ?? "day",
     members_by_tier: response.members_by_tier ?? [],
+    new_members_today: response.new_members_today ?? 0,
     user_registrations: response.user_registrations ?? [],
     user_registrations_by_hour: response.user_registrations_by_hour ?? [],
     receipt_amounts: response.receipt_amounts ?? [],
@@ -279,7 +269,6 @@ function DashboardLoadError({
 export default function DashboardPage() {
   const [dateFrom, setDateFrom] = useState(getDefaultDateFrom);
   const [dateTo, setDateTo] = useState(getDefaultDateTo);
-  const [granularity, setGranularity] = useState<DashboardGranularity>("day");
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -293,9 +282,9 @@ export default function DashboardPage() {
     try {
       const response = normalizeDashboardResponse(
         await getDashboard({
-          date_from: toApiDateStartFromDateInput(dateFrom),
-          date_to: toApiDateEndFromDateInput(dateTo),
-          granularity,
+          date_from: dateFrom,
+          date_to: dateTo,
+          granularity: "day",
         }),
       );
       if (requestId !== requestIdRef.current) return;
@@ -308,12 +297,11 @@ export default function DashboardPage() {
         setLoading(false);
       }
     }
-  }, [dateFrom, dateTo, granularity]);
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
     void loadDashboard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadDashboard]);
 
   const membersByTier = useMemo(
     () =>
@@ -388,10 +376,6 @@ export default function DashboardPage() {
       (sum, item) => sum + item.count,
       0,
     );
-    const newMembers = registrationData.reduce(
-      (sum, item) => sum + item.count,
-      0,
-    );
     const receiptAmount = receiptData.reduce(
       (sum, item) => sum + item.amount,
       0,
@@ -401,12 +385,12 @@ export default function DashboardPage() {
 
     return {
       totalMembers,
-      newMembers,
+      newMembersToday: data?.new_members_today ?? 0,
       receiptAmount,
       pointsEarned,
       pointsUsed,
     };
-  }, [membersByTier, pointsData, receiptData, registrationData]);
+  }, [data?.new_members_today, membersByTier, pointsData, receiptData]);
 
   const peakHour = useMemo(() => {
     const peak = hourlyData.reduce(
@@ -430,7 +414,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm md:p-5">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
             <span className="mb-2 block text-sm font-medium text-defualt-text">
               วันเริ่มต้น
@@ -453,26 +437,6 @@ export default function DashboardPage() {
               className={inputClassName}
             />
           </label>
-          <label className="block">
-            <span className="mb-2 block text-sm font-medium text-defualt-text">
-              ช่วงเวลา
-            </span>
-            <Select
-              value={granularity}
-              options={GRANULARITY_OPTIONS}
-              onChange={setGranularity}
-            />
-          </label>
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={() => void loadDashboard()}
-              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
-              aria-busy={loading}
-            >
-              {loading ? "กำลังโหลด..." : "อัปเดตข้อมูล"}
-            </button>
-          </div>
         </div>
       </div>
 
@@ -495,9 +459,9 @@ export default function DashboardPage() {
               hint="จำนวนสมาชิกทั้งหมด"
             />
             <KpiCard
-              label="สมาชิกใหม่"
-              value={formatNumber(kpis.newMembers)}
-              hint="จำนวนสมาชิกใหม่ในช่วงที่เลือก"
+              label="สมาชิกใหม่ในวันนี้"
+              value={formatNumber(kpis.newMembersToday)}
+              hint="จำนวนสมาชิกที่สมัครใหม่วันนี้"
             />
             <KpiCard
               label="ยอดใบเสร็จอนุมัติ"
@@ -547,8 +511,8 @@ export default function DashboardPage() {
               title="สมาชิกใหม่รายชั่วโมง"
               description={
                 peakHour
-                  ? `ช่วง peak คือ ${peakHour} น.`
-                  : "การกระจายตัวตามชั่วโมงในช่วงที่เลือก"
+                  ? `ช่วง peak วันนี้คือ ${peakHour} น.`
+                  : "การกระจายตัวตามชั่วโมงในวันนี้"
               }
             >
               {hourlyData.some((item) => item.count > 0) ? (
