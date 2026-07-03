@@ -511,8 +511,8 @@ export default function DashboardPage() {
               title="สมาชิกใหม่รายชั่วโมง"
               description={
                 peakHour
-                  ? `ช่วง peak วันนี้คือ ${peakHour} น.`
-                  : "การกระจายตัวตามชั่วโมงในวันนี้"
+                  ? `ช่วง peak คือ ${peakHour} น.`
+                  : "การกระจายตัวตามชั่วโมงในช่วงที่เลือก"
               }
             >
               {hourlyData.some((item) => item.count > 0) ? (
