@@ -7,6 +7,7 @@ import {
   getReceipt,
   rejectReceipt,
   updateReceipt,
+  validateReceiptNumber as checkReceiptNumberAvailable,
   type PortalReceipt,
 } from "@/services/receipts/receipts";
 import {
@@ -163,6 +164,25 @@ export default function ReceiptDetailModal({
     return true;
   };
 
+  const ensureReceiptNumberAvailable = async () => {
+    try {
+      const result = await checkReceiptNumberAvailable(
+        receiptNumber,
+        receipt?.id,
+      );
+      if (!result.available) {
+        setError(
+          result.message ?? "เลขที่ใบเสร็จนี้ตรงกับใบเสร็จที่อนุมัติไปแล้ว",
+        );
+        return false;
+      }
+      return true;
+    } catch (checkError) {
+      setError(handleError(checkError).message);
+      return false;
+    }
+  };
+
   const buildReceiptPayload = () => {
     const payload: { amount: number; receipt_number?: string } = {
       amount: amountNumber,
@@ -194,6 +214,7 @@ export default function ReceiptDetailModal({
 
   const handleApprove = async () => {
     if (!receipt || !validateAmount() || !validateReceiptNumber()) return;
+    if (!(await ensureReceiptNumberAvailable())) return;
 
     setIsSubmitting(true);
     setError(null);
