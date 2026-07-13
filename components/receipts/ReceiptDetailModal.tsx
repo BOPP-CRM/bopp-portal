@@ -336,12 +336,23 @@ export default function ReceiptDetailModal({
                 </button>
               </div>
               <dl className="grid gap-4 text-sm md:grid-cols-2">
-                <DetailItem
-                  label="เลขใบเสร็จ"
-                  value={displayValue(
-                    ocrReceiptNumber ?? receipt.ocr_receipt_number,
-                  )}
-                />
+                {isPending ? (
+                  <div className="md:col-span-2">
+                    <Field label="เลขใบเสร็จ">
+                      <CaseToggleInput
+                        value={receiptNumber}
+                        onChange={setReceiptNumber}
+                        inputClassName={inputClassName}
+                        placeholder="ระบุเลขที่ใบเสร็จ"
+                      />
+                    </Field>
+                  </div>
+                ) : (
+                  <DetailItem
+                    label="เลขใบเสร็จ"
+                    value={receipt.receipt_number}
+                  />
+                )}
                 <DetailItem
                   label="วันที่"
                   value={
