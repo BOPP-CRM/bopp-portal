@@ -1,6 +1,7 @@
 "use client";
 
 import { ModalDetailSkeleton } from "@/components/util/Skeleton";
+import CaseToggleInput from "@/components/util/CaseToggleInput";
 import {
   approveReceipt,
   getReceipt,
@@ -37,6 +38,7 @@ export default function ReceiptDetailModal({
   onSuccess,
 }: ReceiptDetailModalProps) {
   const [receipt, setReceipt] = useState<PortalReceipt | null>(null);
+  const [receiptNumber, setReceiptNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,7 @@ export default function ReceiptDetailModal({
     try {
       const data = await getReceipt(receiptId);
       setReceipt(data);
+      setReceiptNumber(data.receipt_number || "");
       setAmount(String(data.amount || ""));
     } catch (loadError) {
       setError(handleError(loadError).message);
@@ -103,14 +106,34 @@ export default function ReceiptDetailModal({
     return true;
   };
 
-  const handleSaveAmount = async () => {
-    if (!receipt || !validateAmount()) return;
+  const validateReceiptNumber = () => {
+    if (!receiptNumber.trim()) {
+      setError("กรุณาระบุเลขที่ใบเสร็จ");
+      return false;
+    }
+    return true;
+  };
+
+  const buildReceiptPayload = () => {
+    const payload: { amount: number; receipt_number?: string } = {
+      amount: amountNumber,
+    };
+    const trimmedNumber = receiptNumber.trim();
+    if (trimmedNumber && trimmedNumber !== receipt?.receipt_number) {
+      payload.receipt_number = trimmedNumber;
+    }
+    return payload;
+  };
+
+  const handleSave = async () => {
+    if (!receipt || !validateAmount() || !validateReceiptNumber()) return;
 
     setIsSubmitting(true);
     setError(null);
     try {
-      const updated = await updateReceipt(receipt.id, { amount: amountNumber });
+      const updated = await updateReceipt(receipt.id, buildReceiptPayload());
       setReceipt(updated);
+      setReceiptNumber(updated.receipt_number || "");
       setAmount(String(updated.amount || ""));
       onSuccess();
     } catch (submitError) {
@@ -121,12 +144,12 @@ export default function ReceiptDetailModal({
   };
 
   const handleApprove = async () => {
-    if (!receipt || !validateAmount()) return;
+    if (!receipt || !validateAmount() || !validateReceiptNumber()) return;
 
     setIsSubmitting(true);
     setError(null);
     try {
-      const updated = await approveReceipt(receipt.id, { amount: amountNumber });
+      const updated = await approveReceipt(receipt.id, buildReceiptPayload());
       setReceipt(updated);
       onSuccess();
       closeModal();
@@ -229,10 +252,23 @@ export default function ReceiptDetailModal({
 
             <Section title="ข้อมูลใบเสร็จ">
               <dl className="grid gap-4 text-sm md:grid-cols-2">
-                <DetailItem
-                  label="เลขใบเสร็จ"
-                  value={receipt.receipt_number}
-                />
+                {isPending ? (
+                  <div className="md:col-span-2">
+                    <Field label="เลขใบเสร็จ">
+                      <CaseToggleInput
+                        value={receiptNumber}
+                        onChange={setReceiptNumber}
+                        inputClassName={inputClassName}
+                        placeholder="ระบุเลขที่ใบเสร็จ"
+                      />
+                    </Field>
+                  </div>
+                ) : (
+                  <DetailItem
+                    label="เลขใบเสร็จ"
+                    value={receipt.receipt_number}
+                  />
+                )}
                 <DetailItem
                   label="วันที่ส่ง"
                   value={formatDateTime(
@@ -367,10 +403,10 @@ export default function ReceiptDetailModal({
                   <button
                     type="button"
                     disabled={isSubmitting}
-                    onClick={() => void handleSaveAmount()}
+                    onClick={() => void handleSave()}
                     className="w-full cursor-pointer rounded-4xl border border-brown-100 px-4 py-2.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {isSubmitting ? "กำลังบันทึก..." : "บันทึกมูลค่า"}
+                    {isSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
                   </button>
                   <button
                     type="button"
