@@ -78,6 +78,11 @@ export type RejectReceiptRequest = {
   reject_reason: string;
 };
 
+export type ValidateReceiptNumberResponse = {
+  available: boolean;
+  message?: string;
+};
+
 export type ReceiptMemberTier = {
   id: number;
   code: string;
