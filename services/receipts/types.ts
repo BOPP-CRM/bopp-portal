@@ -67,11 +67,13 @@ export type ReceiptDetailResponse = {
 
 export type UpdateReceiptRequest = {
   amount?: number;
+  receipt_number?: string;
   reject_reason?: string;
 };
 
 export type ApproveReceiptRequest = {
   amount?: number;
+  receipt_number?: string;
 };
 
 export type RejectReceiptRequest = {
