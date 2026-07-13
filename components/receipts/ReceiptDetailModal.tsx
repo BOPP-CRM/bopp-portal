@@ -53,9 +53,7 @@ export default function ReceiptDetailModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRejectForm, setShowRejectForm] = useState(false);
-  const [ocrReceiptNumber, setOcrReceiptNumber] = useState<string | null>(
-    null,
-  );
+  const [ocrReceiptNumber, setOcrReceiptNumber] = useState<string | null>(null);
   const [ocrDate, setOcrDate] = useState<string | null>(null);
   const [ocrItems, setOcrItems] = useState<ReceiptOcrItem[]>([]);
   const [ocrTotal, setOcrTotal] = useState<number | null>(null);
@@ -339,11 +337,11 @@ export default function ReceiptDetailModal({
                 {isPending ? (
                   <div className="md:col-span-2">
                     <Field label="เลขใบเสร็จ">
-                      <CaseToggleInput
-                        value={receiptNumber}
-                        onChange={setReceiptNumber}
-                        inputClassName={inputClassName}
-                        placeholder="ระบุเลขที่ใบเสร็จ"
+                      <DetailItem
+                        label="เลขใบเสร็จ"
+                        value={displayValue(
+                          ocrReceiptNumber ?? receipt.ocr_receipt_number,
+                        )}
                       />
                     </Field>
                   </div>
@@ -368,9 +366,15 @@ export default function ReceiptDetailModal({
                       <tr className="bg-gray-10 text-xs text-gray-100">
                         <th className="px-3 py-2 font-medium">ลำดับ</th>
                         <th className="px-3 py-2 font-medium">รายการ</th>
-                        <th className="px-3 py-2 text-center font-medium">จำนวน</th>
-                        <th className="px-3 py-2 text-center font-medium">ราคา/หน่วย</th>
-                        <th className="px-3 py-2 text-center font-medium">จำนวนเงิน</th>
+                        <th className="px-3 py-2 text-center font-medium">
+                          จำนวน
+                        </th>
+                        <th className="px-3 py-2 text-center font-medium">
+                          ราคา/หน่วย
+                        </th>
+                        <th className="px-3 py-2 text-center font-medium">
+                          จำนวนเงิน
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -507,8 +511,8 @@ export default function ReceiptDetailModal({
                   </Field>
                 </div>
                 <p className="mt-3 text-xs text-gray-100">
-                  ระบบจะสร้าง Spending point และ Reward point = floor(มูลค่า
-                  ÷ {formatNumber(convertPoints)}) เมื่ออนุมัติ
+                  ระบบจะสร้าง Spending point และ Reward point = floor(มูลค่า ÷{" "}
+                  {formatNumber(convertPoints)}) เมื่ออนุมัติ
                 </p>
               </Section>
             ) : (
@@ -522,13 +526,15 @@ export default function ReceiptDetailModal({
                     label="Reward Point"
                     value={formatNumber(receipt.reward_points)}
                   />
-                  {receipt.spending_point && typeof receipt.spending_point === "object" ? (
+                  {receipt.spending_point &&
+                  typeof receipt.spending_point === "object" ? (
                     <DetailItem
                       label="Spending Point"
                       value={formatNumber(receipt.spending_point.value)}
                     />
                   ) : null}
-                  {receipt.reward_point && typeof receipt.reward_point === "object" ? (
+                  {receipt.reward_point &&
+                  typeof receipt.reward_point === "object" ? (
                     <DetailItem
                       label="Reward Point (บันทึก)"
                       value={formatNumber(receipt.reward_point.value)}
@@ -646,7 +652,9 @@ function UserSection({ user }: { user: PortalReceipt["user"] }) {
             </div>
           )}
           <div>
-            <p className="font-semibold text-defualt-text">{user.display_name}</p>
+            <p className="font-semibold text-defualt-text">
+              {user.display_name}
+            </p>
             <p className="text-sm text-gray-100">
               LINE: {displayValue(user.line_user_id)}
             </p>
