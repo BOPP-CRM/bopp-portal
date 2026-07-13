@@ -9,6 +9,7 @@ import type {
   ReceiptsListResponse,
   RejectReceiptRequest,
   UpdateReceiptRequest,
+  ValidateReceiptNumberResponse,
 } from "./types";
 
 const mutationConfig = { skipErrorAlert: true };
@@ -49,6 +50,23 @@ export const updateReceipt = async (
     mutationConfig,
   );
   return res.data.receipt;
+};
+
+export const validateReceiptNumber = async (
+  receiptNumber: string,
+  excludeId?: number,
+) => {
+  const res = await apiClient.client.get<ValidateReceiptNumberResponse>(
+    "/portal/receipts/validate-number",
+    {
+      params: {
+        receipt_number: receiptNumber,
+        ...(excludeId ? { exclude_id: excludeId } : {}),
+      },
+      ...mutationConfig,
+    },
+  );
+  return res.data;
 };
 
 export const approveReceipt = async (
