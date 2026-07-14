@@ -7,6 +7,7 @@ import {
   Building2,
   LayoutDashboard,
   Menu as MenuIcon,
+  Plug,
   QrCode,
   Receipt,
   ShieldCheck,
@@ -17,7 +18,7 @@ import {
 import MenuItem from "./MenuItem";
 import Profile from "./Profile";
 import { useApp } from "@/providers/app-provider";
-import { canAccessPath, getUserRole } from "@/utils/roles";
+import { canAccessPath, getUserRole, isAdmin } from "@/utils/roles";
 import { useMemo } from "react";
 
 const iconClassName = "size-6 shrink-0";
@@ -103,6 +104,12 @@ export default function Menu() {
       label: "จัดการทีม",
       path: "/dashboard/team",
     },
+    {
+      icon: <Plug className={iconClassName} />,
+      label: "การเชื่อมต่อ",
+      path: "/dashboard/connections",
+      requiresAdmin: true,
+    },
   ];
 
   const visibleMenuItems = useMemo(() => {
@@ -113,6 +120,9 @@ export default function Menu() {
         item.requiresWarranty &&
         !me?.partner.warranty_enabled
       ) {
+        return false;
+      }
+      if ("requiresAdmin" in item && item.requiresAdmin && !isAdmin(me)) {
         return false;
       }
       return canAccessPath(role, item.path);
