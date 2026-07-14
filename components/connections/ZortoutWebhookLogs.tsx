@@ -62,7 +62,7 @@ export default function ZortoutWebhookLogs() {
 
       {loading ? (
         <div className="mt-4">
-          <TableSkeleton rows={5} />
+          <TableSkeleton rows={5} columns={8} cellClassName="px-3 py-3" />
         </div>
       ) : error ? (
         <p className="mt-4 text-sm text-red-100">{error}</p>
