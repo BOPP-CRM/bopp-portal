@@ -1,8 +1,7 @@
 "use client";
 
-import ConnectionModal from "@/components/profile/ConnectionModal";
 import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
-import { Info, ChevronDown, Settings, Plug } from "lucide-react";
+import { Info, ChevronDown, Settings } from "lucide-react";
 import dialog from "@/components/util/dialog";
 import { useApp } from "@/providers/app-provider";
 import { logout } from "@/services/auth/auth";
@@ -25,7 +24,6 @@ export default function Profile() {
   const { me, fetchMe } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showConnection, setShowConnection] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,18 +122,6 @@ export default function Profile() {
           <button
             type="button"
             role="menuitem"
-            onClick={() => {
-              setShowConnection(true);
-              setIsOpen(false);
-            }}
-            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-100 hover:text-brown-100 cursor-pointer"
-          >
-            <Plug className="size-4" />
-            BOPP MCP
-          </button>
-          <button
-            type="button"
-            role="menuitem"
             onClick={handleLogout}
             className="w-full px-4 py-3 text-left text-sm hover:text-brown-100 cursor-pointer text-gray-100"
           >
@@ -150,10 +136,6 @@ export default function Profile() {
           onClose={() => setShowSettings(false)}
           onSuccess={() => void fetchMe()}
         />
-      ) : null}
-
-      {showConnection && me ? (
-        <ConnectionModal me={me} onClose={() => setShowConnection(false)} />
       ) : null}
     </div>
   );
