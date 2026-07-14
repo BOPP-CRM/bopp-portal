@@ -47,43 +47,50 @@ export default function ZortoutWebhookLogs() {
   const canGoNext = offset + PAGE_SIZE < total;
 
   return (
-    <section className="rounded-2xl border border-gray-200 p-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <section className="border-t border-gray-200 pt-6">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h3 className="text-sm font-semibold text-defualt-text">Webhook Logs</h3>
-          <p className="mt-1 text-xs text-gray-100">
-            ประวัติ webhook ที่ ZORT ส่งเข้ามา
+          <h3 className="text-sm font-semibold text-defualt-text">
+            ประวัติ Webhook
+          </h3>
+          <p className="mt-0.5 text-xs text-gray-100">
+            รายการที่ ZORT ส่งเข้ามาล่าสุด
           </p>
         </div>
         <p className="text-xs text-gray-100">
-          ทั้งหมด {formatNumber(total)} รายการ
+          {formatNumber(total)} รายการ
         </p>
       </div>
 
       {loading ? (
         <div className="mt-4">
-          <TableSkeleton rows={5} columns={8} cellClassName="px-3 py-3" />
+          <TableSkeleton rows={5} columns={5} cellClassName="px-3 py-3" />
         </div>
       ) : error ? (
         <p className="mt-4 text-sm text-red-100">{error}</p>
       ) : logs.length === 0 ? (
-        <p className="mt-4 text-sm text-gray-100">ยังไม่มี webhook logs</p>
+        <p className="mt-4 rounded-2xl border border-dashed border-gray-200 bg-gray-10/40 px-4 py-8 text-center text-sm text-gray-100">
+          ยังไม่มี webhook logs
+        </p>
       ) : (
         <>
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-4 space-y-3 md:hidden">
+            {logs.map((log) => (
+              <LogCard key={log.id} log={log} />
+            ))}
+          </div>
+
+          <div className="mt-4 hidden overflow-x-auto md:block">
             <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
+              <thead className="border-b border-gray-200 text-xs text-gray-100">
                 <tr>
-                  <th className="px-3 py-3 font-medium whitespace-nowrap">
+                  <th className="px-3 py-2.5 font-medium whitespace-nowrap">
                     เวลา
                   </th>
-                  <th className="px-3 py-3 font-medium">Method</th>
-                  <th className="px-3 py-3 font-medium">ออเดอร์</th>
-                  <th className="px-3 py-3 font-medium">ลูกค้า</th>
-                  <th className="px-3 py-3 font-medium">การชำระ</th>
-                  <th className="px-3 py-3 font-medium">คะแนน</th>
-                  <th className="px-3 py-3 font-medium">สถานะ</th>
-                  <th className="px-3 py-3 font-medium">ข้อความ</th>
+                  <th className="px-3 py-2.5 font-medium">ออเดอร์</th>
+                  <th className="px-3 py-2.5 font-medium">ลูกค้า</th>
+                  <th className="px-3 py-2.5 font-medium">คะแนน</th>
+                  <th className="px-3 py-2.5 font-medium">ผลลัพธ์</th>
                 </tr>
               </thead>
               <tbody>
@@ -93,55 +100,41 @@ export default function ZortoutWebhookLogs() {
                     className="border-b border-gray-200 last:border-b-0"
                   >
                     <td className="px-3 py-3 whitespace-nowrap text-gray-100">
-                      {formatDateTime(log.received_at)}
-                    </td>
-                    <td className="px-3 py-3 font-medium text-defualt-text">
-                      {displayValue(log.method)}
-                    </td>
-                    <td className="px-3 py-3 text-defualt-text">
-                      <div>{displayValue(log.order_number)}</div>
-                      <div className="text-xs text-gray-100">
-                        {formatNumber(log.amount)} บาท
+                      <div>{formatDateTime(log.received_at)}</div>
+                      <div className="text-xs">
+                        {displayValue(log.method)}
                       </div>
                     </td>
                     <td className="px-3 py-3 text-defualt-text">
-                      {log.member ? (
-                        <>
-                          <div>{log.member.display_name}</div>
-                          <div className="text-xs text-gray-100">
-                            {displayValue(
-                              log.member.phone || log.member.email || "-",
-                            )}
-                          </div>
-                        </>
-                      ) : (
-                        <div>
-                          <div>{displayValue(log.customer_name)}</div>
-                          <div className="text-xs text-gray-100">
-                            {displayValue(
-                              log.customer_phone || log.customer_email || "-",
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      <div className="font-medium">
+                        {displayValue(log.order_number)}
+                      </div>
+                      <div className="text-xs text-gray-100">
+                        {formatNumber(log.amount)} บาท
+                        {log.payment_status
+                          ? ` · ${displayValue(log.payment_status)}`
+                          : ""}
+                      </div>
                     </td>
                     <td className="px-3 py-3 text-defualt-text">
-                      {displayValue(log.payment_status)}
+                      <CustomerCell log={log} />
                     </td>
                     <td className="px-3 py-3 text-defualt-text">
                       {log.points_awarded ? (
-                        <span className="text-green-700">
+                        <span className="font-medium text-green-700">
                           +{formatNumber(log.reward_points)}
                         </span>
                       ) : (
                         <span className="text-gray-100">-</span>
                       )}
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="max-w-xs px-3 py-3">
                       <LogStatusBadge log={log} />
-                    </td>
-                    <td className="max-w-xs px-3 py-3 text-xs text-gray-100">
-                      <p className="line-clamp-2">{displayValue(log.message)}</p>
+                      {log.message ? (
+                        <p className="mt-1 line-clamp-2 text-xs text-gray-100">
+                          {displayValue(log.message)}
+                        </p>
+                      ) : null}
                     </td>
                   </tr>
                 ))}
@@ -157,7 +150,9 @@ export default function ZortoutWebhookLogs() {
               <button
                 type="button"
                 disabled={!canGoPrev}
-                onClick={() => setOffset((prev) => Math.max(prev - PAGE_SIZE, 0))}
+                onClick={() =>
+                  setOffset((prev) => Math.max(prev - PAGE_SIZE, 0))
+                }
                 className="inline-flex cursor-pointer items-center gap-1 rounded-4xl border border-gray-200 px-3 py-2 text-xs font-medium text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft className="size-4" />
@@ -177,6 +172,73 @@ export default function ZortoutWebhookLogs() {
         </>
       )}
     </section>
+  );
+}
+
+function CustomerCell({ log }: { log: ZortoutWebhookLog }) {
+  if (log.member) {
+    return (
+      <>
+        <div>{log.member.display_name}</div>
+        <div className="text-xs text-gray-100">
+          {displayValue(log.member.phone || log.member.email || "-")}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div>{displayValue(log.customer_name)}</div>
+      <div className="text-xs text-gray-100">
+        {displayValue(log.customer_phone || log.customer_email || "-")}
+      </div>
+    </>
+  );
+}
+
+function LogCard({ log }: { log: ZortoutWebhookLog }) {
+  return (
+    <article className="rounded-2xl border border-gray-200 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-medium text-defualt-text">
+            {displayValue(log.order_number)}
+          </p>
+          <p className="mt-0.5 text-xs text-gray-100">
+            {formatDateTime(log.received_at)}
+            {log.method ? ` · ${displayValue(log.method)}` : ""}
+          </p>
+        </div>
+        <LogStatusBadge log={log} />
+      </div>
+
+      <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt className="text-xs text-gray-100">ลูกค้า</dt>
+          <dd className="mt-0.5 text-defualt-text">
+            <CustomerCell log={log} />
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-gray-100">ยอด / คะแนน</dt>
+          <dd className="mt-0.5 text-defualt-text">
+            {formatNumber(log.amount)} บาท
+            {log.points_awarded ? (
+              <span className="ml-1 font-medium text-green-700">
+                (+{formatNumber(log.reward_points)})
+              </span>
+            ) : null}
+          </dd>
+        </div>
+      </dl>
+
+      {log.message ? (
+        <p className="mt-3 line-clamp-2 text-xs text-gray-100">
+          {displayValue(log.message)}
+        </p>
+      ) : null}
+    </article>
   );
 }
 
@@ -208,7 +270,7 @@ function LogStatusBadge({ log }: { log: ZortoutWebhookLog }) {
   if (log.points_awarded) {
     return (
       <span className="inline-block rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
-        Points Added
+        ได้คะแนน
       </span>
     );
   }
@@ -216,14 +278,14 @@ function LogStatusBadge({ log }: { log: ZortoutWebhookLog }) {
   if (log.warning || log.message) {
     return (
       <span className="inline-block rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700">
-        Warning
+        เตือน
       </span>
     );
   }
 
   return (
     <span className="inline-block rounded-full bg-gray-10 px-2.5 py-1 text-xs font-medium text-gray-100">
-      Received
+      รับแล้ว
     </span>
   );
 }

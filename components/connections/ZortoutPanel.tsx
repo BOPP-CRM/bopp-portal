@@ -15,19 +15,6 @@ import { handleError } from "@/utils/errors";
 import { Info, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-const WEBHOOK_EVENTS = [
-  {
-    method: "ADDORDER",
-    label: "ADDORDER",
-    description: "เมื่อมีการสร้างออเดอร์ใหม่",
-  },
-  {
-    method: "UPDATEORDER",
-    label: "UPDATEORDER",
-    description: "เมื่อออเดอร์ถูกแก้ไขหรือสถานะเปลี่ยน",
-  },
-] as const;
-
 export default function ZortoutPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,33 +116,35 @@ export default function ZortoutPanel() {
     return error ? <p className="p-6 text-sm text-red-100">{error}</p> : null;
   }
 
+  const isActive = status.configured && status.enabled;
+  const webhookUrl = status.webhook_base_url ?? "";
+
   return (
-    <div className="space-y-5 p-6">
-      <section className="rounded-2xl border border-gray-200 p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold text-defualt-text">
-              สถานะการเชื่อมต่อ
-            </h3>
-            <p className="mt-1 text-xs text-gray-100">
-              เปิดใช้งานแล้วนำ URL และ Key ไปตั้งค่าใน ZORT → Setting →
-              Integration → API Reference → Webhook
-            </p>
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-base font-semibold text-defualt-text">
+              ZORT Integration
+            </h2>
+            <ZortoutStatusBadge status={status} />
           </div>
-          <ZortoutStatusBadge status={status} />
+          <p className="mt-1 text-sm text-gray-100">
+            เชื่อมต่อ webhook จาก ZORT เพื่อให้คะแนนเมื่อออเดอร์ชำระเงินแล้ว
+          </p>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
-          {!status.configured || !status.enabled ? (
+        <div className="flex shrink-0 flex-wrap gap-2">
+          {!isActive ? (
             <ActionButton
               disabled={isSubmitting}
               onClick={() => void handleEnable()}
               label={
                 isSubmitting
-                  ? "กำลังเปิดการเชื่อมต่อ..."
+                  ? "กำลังเปิด..."
                   : status.configured
                     ? "เปิดการเชื่อมต่อ"
-                    : "เปิดการเชื่อมต่อและสร้าง Key"
+                    : "เริ่มเชื่อมต่อ"
               }
             />
           ) : (
@@ -163,7 +152,7 @@ export default function ZortoutPanel() {
               <ActionButton
                 disabled={isSubmitting}
                 onClick={() => void handleRegenerateKeys()}
-                label={isSubmitting ? "กำลังสร้าง Key..." : "สร้าง Key ใหม่"}
+                label={isSubmitting ? "กำลังสร้าง..." : "สร้าง Key ใหม่"}
                 icon={<RefreshCw className="size-4" />}
                 variant="outlined"
               />
@@ -176,73 +165,82 @@ export default function ZortoutPanel() {
             </>
           )}
         </div>
-      </section>
+      </div>
 
-      {status.configured && status.enabled ? (
-        <>
-          <section className="rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-defualt-text">
-              Webhook URL
-            </h3>
-            <p className="mt-1 text-xs text-gray-100">
-              ใช้ URL ของ Portal นี้ ระบบจะส่งต่อ request ไปยัง Odoo อัตโนมัติ
-              ใส่ URL เดียวกันในช่อง ADDORDER และ UPDATEORDER ของ ZORT
-            </p>
+      {!isActive ? (
+        <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-10/60 px-5 py-8 text-center">
+          <p className="text-sm font-medium text-defualt-text">
+            ยังไม่ได้เปิดใช้งาน
+          </p>
+          <p className="mx-auto mt-1 max-w-md text-sm text-gray-100">
+            กดเริ่มเชื่อมต่อเพื่อสร้าง Webhook URL และ Key
+            จากนั้นนำไปตั้งค่าใน ZORT
+          </p>
+        </div>
+      ) : (
+        <section className="space-y-5">
+          <ol className="grid gap-3 sm:grid-cols-3">
+            <SetupStep
+              step={1}
+              title="คัดลอก URL และ Key"
+              detail="ใช้ค่าด้านล่างนี้"
+            />
+            <SetupStep
+              step={2}
+              title="ไปที่ ZORT"
+              detail="Setting → Integration → Webhook"
+            />
+            <SetupStep
+              step={3}
+              title="วางค่า"
+              detail="URL ทั้ง ADDORDER และ UPDATEORDER · ใส่ key1 เป็นอย่างน้อย"
+            />
+          </ol>
 
-            <div className="mt-4 space-y-4">
-              {WEBHOOK_EVENTS.map((event) => (
+          <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+            <CopyField
+              label="Webhook URL"
+              description="ใช้ URL เดียวกันทั้ง ADDORDER และ UPDATEORDER"
+              value={webhookUrl}
+              onCopy={(value) => void copyToClipboard(value, " URL ")}
+            />
+
+            <div className="my-5 border-t border-gray-200" />
+
+            <div>
+              <p className="text-sm font-medium text-defualt-text">
+                Webhook Keys
+              </p>
+              <p className="mt-1 text-xs text-gray-100">
+                key1 จำเป็น · key2 / key3 ใส่ได้ตามต้องการ
+              </p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-3">
                 <CopyField
-                  key={event.method}
-                  label={event.label}
-                  description={event.description}
-                  value={status.webhook_base_url ?? ""}
-                  onCopy={(value) =>
-                    void copyToClipboard(value, ` ${event.label} `)
-                  }
+                  label="key1"
+                  required
+                  value={status.key1 ?? ""}
+                  onCopy={(value) => void copyToClipboard(value, " key1 ")}
                 />
-              ))}
+                <CopyField
+                  label="key2"
+                  value={status.key2 ?? ""}
+                  onCopy={(value) => void copyToClipboard(value, " key2 ")}
+                />
+                <CopyField
+                  label="key3"
+                  value={status.key3 ?? ""}
+                  onCopy={(value) => void copyToClipboard(value, " key3 ")}
+                />
+              </div>
             </div>
-          </section>
+          </div>
 
-          <section className="rounded-2xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-defualt-text">
-              Webhook Keys
-            </h3>
-            <p className="mt-1 text-xs text-gray-100">
-              นำค่า key1, key2, key3 ไปใส่ในแท็บ Webhook ของ ZORT (key1
-              บังคับกรอก)
-            </p>
-
-            <div className="mt-4 space-y-4">
-              <CopyField
-                label="key1"
-                required
-                value={status.key1 ?? ""}
-                description="ทุก Request จะส่งค่านี้ใน Header"
-                onCopy={(value) => void copyToClipboard(value, " key1 ")}
-              />
-              <CopyField
-                label="key2"
-                value={status.key2 ?? ""}
-                description="ทุก Request จะส่งค่านี้ใน Header"
-                onCopy={(value) => void copyToClipboard(value, " key2 ")}
-              />
-              <CopyField
-                label="key3"
-                value={status.key3 ?? ""}
-                description="ทุก Request จะส่งค่านี้ใน Header"
-                onCopy={(value) => void copyToClipboard(value, " key3 ")}
-              />
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-brown-100/30 bg-brown-yellow-5 p-4 text-xs text-brown-100">
-            เมื่อออเดอร์มี paymentstatus เป็น Paid
-            ระบบจะค้นหาสมาชิกจากเบอร์โทรหรืออีเมลในออเดอร์
-            แล้วเพิ่มคะแนนตาม Tier Convert Points ของสมาชิก
-          </section>
-        </>
-      ) : null}
+          <p className="text-xs text-gray-100">
+            เมื่อออเดอร์มีสถานะชำระเงิน Paid
+            ระบบจะหาสมาชิกจากเบอร์หรืออีเมลแล้วให้คะแนนตาม Tier
+          </p>
+        </section>
+      )}
 
       <ZortoutWebhookLogs />
 
@@ -254,10 +252,32 @@ export default function ZortoutPanel() {
   );
 }
 
+function SetupStep({
+  step,
+  title,
+  detail,
+}: {
+  step: number;
+  title: string;
+  detail: string;
+}) {
+  return (
+    <li className="flex gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brown-100 text-xs font-semibold text-white">
+        {step}
+      </span>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-defualt-text">{title}</p>
+        <p className="mt-0.5 text-xs text-gray-100">{detail}</p>
+      </div>
+    </li>
+  );
+}
+
 function ZortoutStatusBadge({ status }: { status: ZortoutStatus }) {
   if (!status.configured) {
     return (
-      <span className="rounded-full bg-gray-10 px-3 py-1 text-xs font-medium text-gray-100">
+      <span className="rounded-full bg-gray-10 px-2.5 py-1 text-xs font-medium text-gray-100">
         ยังไม่ได้ตั้งค่า
       </span>
     );
@@ -265,14 +285,14 @@ function ZortoutStatusBadge({ status }: { status: ZortoutStatus }) {
 
   if (status.enabled) {
     return (
-      <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+      <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
         เปิดใช้งาน
       </span>
     );
   }
 
   return (
-    <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-100">
+    <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-100">
       ปิดใช้งาน
     </span>
   );
