@@ -44,6 +44,8 @@ export type PortalReceipt = {
   reward_point: ReceiptPoint;
   create_date?: string | false;
   submitted_date?: string | false;
+  ocr_receipt_number?: string | false;
+  ocr_date?: string | false;
 };
 
 export type ReceiptsListParams = {

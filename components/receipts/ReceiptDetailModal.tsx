@@ -10,10 +10,16 @@ import {
   validateReceiptNumber as checkReceiptNumberAvailable,
   type PortalReceipt,
 } from "@/services/receipts/receipts";
+import {
+  extractReceiptOcrData,
+  fetchImageAsOcrFile,
+  type ReceiptOcrItem,
+} from "@/services/receipts/ocr";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber, formatReviewedBy } from "@/utils/format";
-import { Check, ExternalLink, X } from "lucide-react";
+import { getProxiedImageUrl } from "@/utils/image";
+import { Check, ExternalLink, ScanLine, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -47,10 +53,23 @@ export default function ReceiptDetailModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRejectForm, setShowRejectForm] = useState(false);
+  const [ocrReceiptNumber, setOcrReceiptNumber] = useState<string | null>(
+    null,
+  );
+  const [ocrDate, setOcrDate] = useState<string | null>(null);
+  const [ocrItems, setOcrItems] = useState<ReceiptOcrItem[]>([]);
+  const [ocrTotal, setOcrTotal] = useState<number | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState<string | null>(null);
 
   const loadReceipt = async () => {
     setLoading(true);
     setError(null);
+    setOcrReceiptNumber(null);
+    setOcrDate(null);
+    setOcrItems([]);
+    setOcrTotal(null);
+    setOcrError(null);
     try {
       const data = await getReceipt(receiptId);
       setReceipt(data);
@@ -67,6 +86,36 @@ export default function ReceiptDetailModal({
   useEffect(() => {
     void loadReceipt();
   }, [receiptId]);
+
+  const handleRunOcr = async () => {
+    if (!receipt?.receipt_image_url) return;
+
+    setOcrLoading(true);
+    setOcrError(null);
+    try {
+      const proxiedUrl = getProxiedImageUrl(receipt.receipt_image_url);
+      const file = await fetchImageAsOcrFile(proxiedUrl!);
+
+      const data = await extractReceiptOcrData(file);
+      if (!data) throw new Error("อ่านข้อมูลจากรูปไม่สำเร็จ");
+
+      setOcrReceiptNumber(data.receiptNumber);
+      setOcrDate(data.date);
+      setOcrItems(data.items);
+      setOcrTotal(data.total);
+      if (!data.receiptNumber && !data.date) {
+        setOcrError("ไม่พบเลขใบเสร็จและวันที่ในรูป");
+      } else if (!data.receiptNumber) {
+        setOcrError("ไม่พบเลขใบเสร็จในรูป");
+      } else if (!data.date) {
+        setOcrError("ไม่พบวันที่ในรูป");
+      }
+    } catch (ocrRunError) {
+      setOcrError(handleError(ocrRunError).message);
+    } finally {
+      setOcrLoading(false);
+    }
+  };
 
   const isPending = receipt?.state === "pending";
   const amountNumber = Number(amount);
@@ -269,6 +318,110 @@ export default function ReceiptDetailModal({
               ) : (
                 <p className="text-sm text-gray-100">ไม่มีรูปใบเสร็จ</p>
               )}
+            </Section>
+
+            <Section title="ข้อมูลจาก OCR">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <p className="text-xs text-gray-100">
+                  อ่านข้อมูลจากรูปใบเสร็จโดยอัตโนมัติ
+                </p>
+                <button
+                  type="button"
+                  disabled={!receipt.receipt_image_url || ocrLoading}
+                  onClick={() => void handleRunOcr()}
+                  className="inline-flex shrink-0 cursor-pointer items-center gap-2 rounded-4xl border border-brown-100 px-4 py-2 text-xs font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ScanLine className="size-3.5" />
+                  {ocrLoading ? "กำลังอ่าน..." : "อ่านจากรูป (OCR)"}
+                </button>
+              </div>
+              <dl className="grid gap-4 text-sm md:grid-cols-2">
+                <DetailItem
+                  label="เลขใบเสร็จ"
+                  value={displayValue(
+                    ocrReceiptNumber ?? receipt.ocr_receipt_number,
+                  )}
+                />
+                <DetailItem
+                  label="วันที่"
+                  value={
+                    ocrDate ??
+                    (receipt.ocr_date ? formatDateTime(receipt.ocr_date) : "-")
+                  }
+                />
+              </dl>
+              {ocrItems.length > 0 ? (
+                <div className="mt-4 overflow-x-auto rounded-xl border border-gray-200">
+                  <table className="w-full min-w-[480px] text-left text-sm">
+                    <thead>
+                      <tr className="bg-gray-10 text-xs text-gray-100">
+                        <th className="px-3 py-2 font-medium">ลำดับ</th>
+                        <th className="px-3 py-2 font-medium">รายการ</th>
+                        <th className="px-3 py-2 text-center font-medium">จำนวน</th>
+                        <th className="px-3 py-2 text-center font-medium">ราคา/หน่วย</th>
+                        <th className="px-3 py-2 text-center font-medium">จำนวนเงิน</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ocrItems.map((item, index) => (
+                        <tr
+                          key={`${item.no}-${index}`}
+                          className="border-t border-gray-200"
+                        >
+                          <td className="px-3 py-2 align-top text-gray-100">
+                            {item.no}
+                          </td>
+                          <td className="px-3 py-2 align-top text-defualt-text">
+                            {item.description}
+                          </td>
+                          <td className="px-3 py-2 text-center align-top text-defualt-text">
+                            {item.quantity !== null
+                              ? formatNumber(item.quantity)
+                              : "-"}
+                          </td>
+                          <td className="px-3 py-2 text-center align-top text-defualt-text">
+                            {item.unitPrice !== null
+                              ? formatNumber(item.unitPrice)
+                              : "-"}
+                          </td>
+                          <td className="px-3 py-2 text-center align-top font-medium text-defualt-text">
+                            {item.amount !== null
+                              ? formatNumber(item.amount)
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    {ocrTotal !== null ? (
+                      <tfoot>
+                        <tr className="border-t border-gray-200 bg-gray-10">
+                          <td
+                            colSpan={4}
+                            className="px-3 py-2 text-right font-medium text-defualt-text"
+                          >
+                            ยอดรวม
+                          </td>
+                          <td className="px-3 py-2 text-center font-semibold text-brown-100">
+                            {formatNumber(ocrTotal)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    ) : null}
+                  </table>
+                </div>
+              ) : ocrTotal !== null ? (
+                <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-10 px-4 py-3">
+                  <span className="text-sm font-medium text-defualt-text">
+                    ยอดรวม
+                  </span>
+                  <span className="text-sm font-semibold text-brown-100">
+                    {formatNumber(ocrTotal)}
+                  </span>
+                </div>
+              ) : null}
+              {ocrError ? (
+                <p className="mt-3 text-xs text-red-100">{ocrError}</p>
+              ) : null}
             </Section>
 
             <Section title="ข้อมูลใบเสร็จ">
