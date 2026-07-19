@@ -1,6 +1,9 @@
 export type ZortoutStatus = {
   enabled: boolean;
   configured: boolean;
+  webhook_synced: boolean;
+  api_credentials_configured: boolean;
+  store_name: string | null;
   webhook_base_url: string | null;
   addorder_url: string | null;
   updateorder_url: string | null;
@@ -8,6 +11,12 @@ export type ZortoutStatus = {
   key1: string | null;
   key2: string | null;
   key3: string | null;
+};
+
+export type ZortoutConnectPayload = {
+  storename: string;
+  apikey: string;
+  apisecret: string;
 };
 
 export type ZortoutWebhookEvent = {
@@ -27,11 +36,6 @@ export const ZORTOUT_WEBHOOK_EVENTS: ZortoutWebhookEvent[] = [
     method: "UPDATEORDER",
     description:
       "แก้ไขออเดอร์หรือเปลี่ยนสถานะ — ใช้ลบคะแนนเมื่อ void หรือยกเลิกการชำระเงิน",
-  },
-  {
-    field: "deleteorderurl",
-    method: "DELETEORDER",
-    description: "ลบออเดอร์ — ใช้ลบคะแนนที่เคยให้ไปแล้ว",
   },
 ];
 
@@ -68,6 +72,7 @@ export type ZortoutWebhookLog = {
   customer_phone: string | false;
   customer_email: string | false;
   points_awarded: boolean;
+  points_revoked?: boolean;
   reward_points: number;
   member: ZortoutWebhookLogMember | false;
 };

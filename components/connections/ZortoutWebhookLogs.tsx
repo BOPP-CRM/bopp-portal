@@ -48,18 +48,11 @@ export default function ZortoutWebhookLogs() {
 
   return (
     <section className="border-t border-gray-200 pt-6">
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h3 className="text-sm font-semibold text-defualt-text">
-            ประวัติ Webhook
-          </h3>
-          <p className="mt-0.5 text-xs text-gray-100">
-            รายการที่ ZORT ส่งเข้ามาล่าสุด
-          </p>
-        </div>
-        <p className="text-xs text-gray-100">
-          {formatNumber(total)} รายการ
-        </p>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-defualt-text">
+          ประวัติ Webhook
+        </h3>
+        <p className="text-xs text-gray-100">{formatNumber(total)} รายการ</p>
       </div>
 
       {loading ? (
@@ -123,6 +116,10 @@ export default function ZortoutWebhookLogs() {
                       {log.points_awarded ? (
                         <span className="font-medium text-green-700">
                           +{formatNumber(log.reward_points)}
+                        </span>
+                      ) : log.points_revoked && log.reward_points > 0 ? (
+                        <span className="font-medium text-red-100">
+                          -{formatNumber(log.reward_points)}
                         </span>
                       ) : (
                         <span className="text-gray-100">-</span>
@@ -228,6 +225,10 @@ function LogCard({ log }: { log: ZortoutWebhookLog }) {
               <span className="ml-1 font-medium text-green-700">
                 (+{formatNumber(log.reward_points)})
               </span>
+            ) : log.points_revoked && log.reward_points > 0 ? (
+              <span className="ml-1 font-medium text-red-100">
+                (-{formatNumber(log.reward_points)})
+              </span>
             ) : null}
           </dd>
         </div>
@@ -271,6 +272,14 @@ function LogStatusBadge({ log }: { log: ZortoutWebhookLog }) {
     return (
       <span className="inline-block rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
         ได้คะแนน
+      </span>
+    );
+  }
+
+  if (log.points_revoked) {
+    return (
+      <span className="inline-block rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-100">
+        ลดคะแนน
       </span>
     );
   }
