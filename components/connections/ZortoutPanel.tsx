@@ -8,7 +8,7 @@ import {
   syncZortoutWebhook,
 } from "@/services/zortout/zortout";
 import type { ZortoutStatus } from "@/services/zortout/types";
-import { ActionButton } from "@/components/connections/shared";
+import { ActionButton, CopyField } from "@/components/connections/shared";
 import ZortoutWebhookLogs from "@/components/connections/ZortoutWebhookLogs";
 import dialog from "@/components/util/dialog";
 import { ContentSkeleton } from "@/components/util/Skeleton";
@@ -27,6 +27,7 @@ export default function ZortoutPanel() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<ZortoutStatus | null>(null);
   const [storename, setStorename] = useState("");
   const [apikey, setApikey] = useState("");
@@ -47,6 +48,17 @@ export default function ZortoutPanel() {
   useEffect(() => {
     void loadStatus();
   }, [loadStatus]);
+
+  const copyToClipboard = async (text: string, label?: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyMessage(label ? `คัดลอก${label}แล้ว` : "คัดลอกแล้ว");
+      setTimeout(() => setCopyMessage(null), 2000);
+    } catch {
+      setCopyMessage("ไม่สามารถคัดลอกได้");
+      setTimeout(() => setCopyMessage(null), 2000);
+    }
+  };
 
   const handleConnect = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -114,7 +126,7 @@ export default function ZortoutPanel() {
   const handleRegenerateKeys = async () => {
     const result = await dialog.fire({
       title: "สร้าง Key ใหม่",
-      description: "ระบบจะอัปเดต Webhook ใน Zortout ให้อัตโนมัติ",
+      description: "ระบบจะสร้าง Key ใหม่แล้ว sync ไปที่ Zortout ให้อัตโนมัติ",
       icon: <Info className="text-brown-100" />,
       confirmText: "สร้าง Key ใหม่",
       confirmVariant: "primary",
@@ -125,9 +137,11 @@ export default function ZortoutPanel() {
     setError(null);
     setSuccessMessage(null);
     try {
-      const response = await regenerateZortoutKeys();
-      setStatus(response.zortout);
-      setSuccessMessage("อัปเดต Key แล้ว");
+      const regenerated = await regenerateZortoutKeys();
+      setStatus(regenerated.zortout);
+      const synced = await syncZortoutWebhook();
+      setStatus(synced.zortout);
+      setSuccessMessage("อัปเดต Key และ sync Webhook แล้ว");
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -168,6 +182,7 @@ export default function ZortoutPanel() {
         <ConnectedSummary
           status={status}
           isSubmitting={isSubmitting}
+          onCopy={(value, label) => void copyToClipboard(value, label)}
           onResync={() => void handleResync()}
           onRegenerateKeys={() => void handleRegenerateKeys()}
           onDisable={() => void handleDisable()}
@@ -176,6 +191,9 @@ export default function ZortoutPanel() {
 
       <ZortoutWebhookLogs />
 
+      {copyMessage ? (
+        <p className="text-xs text-brown-100">{copyMessage}</p>
+      ) : null}
       {successMessage ? (
         <p className="text-sm text-green-700">{successMessage}</p>
       ) : null}
@@ -267,18 +285,20 @@ function ConnectForm({
 function ConnectedSummary({
   status,
   isSubmitting,
+  onCopy,
   onResync,
   onRegenerateKeys,
   onDisable,
 }: {
   status: ZortoutStatus;
   isSubmitting: boolean;
+  onCopy: (value: string, label?: string) => void;
   onResync: () => void;
   onRegenerateKeys: () => void;
   onDisable: () => void;
 }) {
   return (
-    <section className="mx-auto max-w-lg space-y-5">
+    <section className="max-w-2xl space-y-5">
       <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50/50 px-4 py-3">
         <CheckCircle2 className="size-5 shrink-0 text-green-700" />
         <div className="min-w-0">
@@ -291,7 +311,42 @@ function ConnectedSummary({
         </div>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2">
+      <CopyField
+        label="Webhook URL (ระบบ)"
+        description="URL ที่ sync ไปยัง Zortout สำหรับทุก event"
+        value={status.webhook_base_url ?? ""}
+        onCopy={(value) => onCopy(value, " URL ")}
+      />
+
+      <div>
+        <p className="text-sm font-medium text-defualt-text">
+          Webhook Keys (Zortout)
+        </p>
+        <p className="mt-1 text-xs text-gray-100">
+          Key ของระบบที่ sync ไปยัง Zortout · key1 จำเป็น · key2 / key3
+          ใส่ได้ตามต้องการ
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <CopyField
+            label="key1"
+            required
+            value={status.key1 ?? ""}
+            onCopy={(value) => onCopy(value, " key1 ")}
+          />
+          <CopyField
+            label="key2"
+            value={status.key2 ?? ""}
+            onCopy={(value) => onCopy(value, " key2 ")}
+          />
+          <CopyField
+            label="key3"
+            value={status.key3 ?? ""}
+            onCopy={(value) => onCopy(value, " key3 ")}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
         <ActionButton
           disabled={isSubmitting || !status.api_credentials_configured}
           onClick={onResync}
