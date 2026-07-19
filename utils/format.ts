@@ -84,8 +84,8 @@ const POINT_SOURCE_LABELS: Record<string, string> = {
 
 const POINT_TYPE_LABELS: Record<string, string> = {
   earn: "เพิ่ม",
-  burn: "ลด",
-  spend: "ลด",
+  burn: "ลดคะแนน",
+  spend: "ลดคะแนน",
 };
 
 export function isPointEarn(type: string) {

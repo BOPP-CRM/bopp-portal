@@ -1,5 +1,6 @@
 import apiClient from "@/services/api-client";
 import type {
+  ZortoutConnectPayload,
   ZortoutMutationResponse,
   ZortoutStatusResponse,
   ZortoutWebhookLogsParams,
@@ -19,6 +20,26 @@ export const enableZortout = async () => {
   const res = await apiClient.client.post<ZortoutMutationResponse>(
     "/portal/zortout/enable",
     {},
+    mutationConfig,
+  );
+  return res.data;
+};
+
+export const connectZortout = async (payload: ZortoutConnectPayload) => {
+  const res = await apiClient.client.post<ZortoutMutationResponse>(
+    "/portal/zortout/connect",
+    payload,
+    mutationConfig,
+  );
+  return res.data;
+};
+
+export const syncZortoutWebhook = async (
+  payload: Partial<ZortoutConnectPayload> = {},
+) => {
+  const res = await apiClient.client.post<ZortoutMutationResponse>(
+    "/portal/zortout/sync-webhook",
+    payload,
     mutationConfig,
   );
   return res.data;
@@ -55,4 +76,4 @@ export const getZortoutWebhookLogs = async (params: ZortoutWebhookLogsParams = {
   return res.data;
 };
 
-export type { ZortoutStatus, ZortoutWebhookLog } from "@/services/zortout/types";
+export type { ZortoutConnectPayload, ZortoutStatus, ZortoutWebhookLog } from "@/services/zortout/types";
