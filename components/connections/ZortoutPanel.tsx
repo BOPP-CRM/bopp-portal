@@ -6,7 +6,10 @@ import {
   getZortoutStatus,
   regenerateZortoutKeys,
 } from "@/services/zortout/zortout";
-import type { ZortoutStatus } from "@/services/zortout/types";
+import {
+  ZORTOUT_WEBHOOK_EVENTS,
+  type ZortoutStatus,
+} from "@/services/zortout/types";
 import { ActionButton, CopyField } from "@/components/connections/shared";
 import ZortoutWebhookLogs from "@/components/connections/ZortoutWebhookLogs";
 import dialog from "@/components/util/dialog";
@@ -89,7 +92,7 @@ export default function ZortoutPanel() {
     const result = await dialog.fire({
       title: "สร้าง Key ใหม่",
       description:
-        "ต้องอัปเดต key1, key2, key3 ใน ZORT Portal ด้วย มิฉะนั้น webhook จะไม่ทำงาน",
+        "ต้องอัปเดต key1, key2, key3 ใน ZORT Portal ด้วย มิฉะนั้น webhook ทุก event จะไม่ทำงาน",
       icon: <Info className="text-brown-100" />,
       confirmText: "สร้าง Key ใหม่",
       confirmVariant: "primary",
@@ -178,24 +181,13 @@ export default function ZortoutPanel() {
           </p>
         </div>
       ) : (
-        <section className="space-y-5">
-          <ol className="grid gap-3 sm:grid-cols-3">
-            <SetupStep
-              step={1}
-              title="คัดลอก URL และ Key"
-              detail="ใช้ค่าด้านล่างนี้"
-            />
-            <SetupStep
-              step={2}
-              title="ไปที่ ZORT"
-              detail="Setting → Integration → Webhook"
-            />
-            <SetupStep
-              step={3}
-              title="วางค่า"
-              detail="URL ทั้ง ADDORDER และ UPDATEORDER · ใส่ key1 เป็นอย่างน้อย"
-            />
-          </ol>
+        <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+          <CopyField
+            label="Webhook URL"
+            description="ใส่ URL นี้ในทุก event ด้านล่าง (addorderurl, updateorderurl, deleteorderurl)"
+            value={webhookUrl}
+            onCopy={(value) => void copyToClipboard(value, " URL ")}
+          />
 
           <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
             <CopyField
@@ -205,34 +197,27 @@ export default function ZortoutPanel() {
               onCopy={(value) => void copyToClipboard(value, " URL ")}
             />
 
-            <div className="my-5 border-t border-gray-200" />
+          <ZortoutSetupGuide />
 
-            <div>
-              <p className="text-sm font-medium text-defualt-text">
-                Webhook Keys
-              </p>
-              <p className="mt-1 text-xs text-gray-100">
-                key1 จำเป็น · key2 / key3 ใส่ได้ตามต้องการ
-              </p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
-                <CopyField
-                  label="key1"
-                  required
-                  value={status.key1 ?? ""}
-                  onCopy={(value) => void copyToClipboard(value, " key1 ")}
-                />
-                <CopyField
-                  label="key2"
-                  value={status.key2 ?? ""}
-                  onCopy={(value) => void copyToClipboard(value, " key2 ")}
-                />
-                <CopyField
-                  label="key3"
-                  value={status.key3 ?? ""}
-                  onCopy={(value) => void copyToClipboard(value, " key3 ")}
-                />
-              </div>
-            </div>
+          <div className="my-5 border-t border-gray-200" />
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            <CopyField
+              label="key1"
+              required
+              value={status.key1 ?? ""}
+              onCopy={(value) => void copyToClipboard(value, " key1 ")}
+            />
+            <CopyField
+              label="key2"
+              value={status.key2 ?? ""}
+              onCopy={(value) => void copyToClipboard(value, " key2 ")}
+            />
+            <CopyField
+              label="key3"
+              value={status.key3 ?? ""}
+              onCopy={(value) => void copyToClipboard(value, " key3 ")}
+            />
           </div>
 
           <p className="text-xs text-gray-100">
@@ -252,25 +237,39 @@ export default function ZortoutPanel() {
   );
 }
 
-function SetupStep({
-  step,
-  title,
-  detail,
-}: {
-  step: number;
-  title: string;
-  detail: string;
-}) {
+function ZortoutSetupGuide() {
   return (
-    <li className="flex gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3">
-      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brown-100 text-xs font-semibold text-white">
-        {step}
-      </span>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-defualt-text">{title}</p>
-        <p className="mt-0.5 text-xs text-gray-100">{detail}</p>
-      </div>
-    </li>
+    <div>
+      <p className="text-sm font-medium text-defualt-text">
+        Event ที่ต้องตั้งค่าใน ZORT Portal
+      </p>
+      <p className="mt-1 text-xs text-gray-100">
+        ไปที่ ZORT → Settings → Webhook แล้วใส่ Webhook URL เดียวกันในช่องเหล่านี้
+        พร้อม key1, key2, key3 ด้านล่าง
+      </p>
+
+      <ol className="mt-4 space-y-3">
+        {ZORTOUT_WEBHOOK_EVENTS.map((event, index) => (
+          <li
+            key={event.field}
+            className="rounded-xl border border-gray-200 bg-gray-10/40 px-4 py-3"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-medium text-gray-100">
+                {index + 1}.
+              </span>
+              <code className="rounded-md bg-white px-2 py-0.5 text-xs font-medium text-defualt-text">
+                {event.field}
+              </code>
+              <span className="rounded-full bg-brown-50 px-2 py-0.5 text-xs font-medium text-brown-100">
+                {event.method}
+              </span>
+            </div>
+            <p className="mt-2 text-sm text-defualt-text">{event.description}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 

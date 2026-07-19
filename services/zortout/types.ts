@@ -4,10 +4,36 @@ export type ZortoutStatus = {
   webhook_base_url: string | null;
   addorder_url: string | null;
   updateorder_url: string | null;
+  deleteorder_url: string | null;
   key1: string | null;
   key2: string | null;
   key3: string | null;
 };
+
+export type ZortoutWebhookEvent = {
+  field: string;
+  method: string;
+  description: string;
+};
+
+export const ZORTOUT_WEBHOOK_EVENTS: ZortoutWebhookEvent[] = [
+  {
+    field: "addorderurl",
+    method: "ADDORDER",
+    description: "สร้างออเดอร์ใหม่ — ให้คะแนนเมื่อชำระเงินแล้ว (Paid)",
+  },
+  {
+    field: "updateorderurl",
+    method: "UPDATEORDER",
+    description:
+      "แก้ไขออเดอร์หรือเปลี่ยนสถานะ — ใช้ลบคะแนนเมื่อ void หรือยกเลิกการชำระเงิน",
+  },
+  {
+    field: "deleteorderurl",
+    method: "DELETEORDER",
+    description: "ลบออเดอร์ — ใช้ลบคะแนนที่เคยให้ไปแล้ว",
+  },
+];
 
 export type ZortoutStatusResponse = {
   zortout: ZortoutStatus;
