@@ -92,7 +92,7 @@ export default function ZortoutPanel() {
     try {
       const response = await syncZortoutWebhook();
       setStatus(response.zortout);
-      setSuccessMessage("อัปเดต Webhook แล้ว");
+      setSuccessMessage("อัปเดตแล้ว");
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -103,7 +103,7 @@ export default function ZortoutPanel() {
   const handleDisable = async () => {
     const result = await dialog.fire({
       title: "ปิดการเชื่อมต่อ",
-      description: "Webhook จาก ZORT จะหยุดทำงานจนกว่าจะเชื่อมต่อใหม่",
+      description: "Webhook จะหยุดจนกว่าจะเชื่อมต่อใหม่",
       icon: <Info className="text-brown-100" />,
       confirmText: "ปิดการเชื่อมต่อ",
       confirmVariant: "primary",
@@ -126,7 +126,7 @@ export default function ZortoutPanel() {
   const handleRegenerateKeys = async () => {
     const result = await dialog.fire({
       title: "สร้าง Key ใหม่",
-      description: "ระบบจะสร้าง Key ใหม่แล้ว sync ไปที่ Zortout ให้อัตโนมัติ",
+      description: "จะ sync ไป Zortout อัตโนมัติ",
       icon: <Info className="text-brown-100" />,
       confirmText: "สร้าง Key ใหม่",
       confirmVariant: "primary",
@@ -141,7 +141,7 @@ export default function ZortoutPanel() {
       setStatus(regenerated.zortout);
       const synced = await syncZortoutWebhook();
       setStatus(synced.zortout);
-      setSuccessMessage("อัปเดต Key และ sync Webhook แล้ว");
+      setSuccessMessage("อัปเดต Key แล้ว");
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -306,44 +306,33 @@ function ConnectedSummary({
             {displayValue(status.store_name)}
           </p>
           <p className="text-xs text-gray-100">
-            {status.webhook_synced ? "Webhook พร้อมใช้งาน" : "รอ sync Webhook"}
+            {status.webhook_synced ? "พร้อมใช้งาน" : "รอ sync"}
           </p>
         </div>
       </div>
 
       <CopyField
-        label="Webhook URL (ระบบ)"
-        description="URL ที่ sync ไปยัง Zortout สำหรับทุก event"
+        label="URL"
         value={status.webhook_base_url ?? ""}
         onCopy={(value) => onCopy(value, " URL ")}
       />
 
-      <div>
-        <p className="text-sm font-medium text-defualt-text">
-          Webhook Keys (Zortout)
-        </p>
-        <p className="mt-1 text-xs text-gray-100">
-          Key ของระบบที่ sync ไปยัง Zortout · key1 จำเป็น · key2 / key3
-          ใส่ได้ตามต้องการ
-        </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <CopyField
-            label="key1"
-            required
-            value={status.key1 ?? ""}
-            onCopy={(value) => onCopy(value, " key1 ")}
-          />
-          <CopyField
-            label="key2"
-            value={status.key2 ?? ""}
-            onCopy={(value) => onCopy(value, " key2 ")}
-          />
-          <CopyField
-            label="key3"
-            value={status.key3 ?? ""}
-            onCopy={(value) => onCopy(value, " key3 ")}
-          />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <CopyField
+          label="key1"
+          value={status.key1 ?? ""}
+          onCopy={(value) => onCopy(value, " key1 ")}
+        />
+        <CopyField
+          label="key2"
+          value={status.key2 ?? ""}
+          onCopy={(value) => onCopy(value, " key2 ")}
+        />
+        <CopyField
+          label="key3"
+          value={status.key3 ?? ""}
+          onCopy={(value) => onCopy(value, " key3 ")}
+        />
       </div>
 
       <div className="flex flex-wrap gap-2">
