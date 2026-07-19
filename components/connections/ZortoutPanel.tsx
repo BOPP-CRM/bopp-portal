@@ -192,14 +192,9 @@ function ZortoutHeader({ status }: { status: ZortoutStatus }) {
         alt="Zortout"
         className="size-14 shrink-0 rounded-2xl object-cover shadow-sm"
       />
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="text-lg font-semibold text-defualt-text">Zortout</h2>
-          <ZortoutStatusBadge status={status} />
-        </div>
-        <p className="mt-0.5 text-sm text-gray-100">
-          ออเดอร์ Paid → ให้คะแนนสมาชิกอัตโนมัติ
-        </p>
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
+        <h2 className="text-lg font-semibold text-defualt-text">Zortout</h2>
+        <ZortoutStatusBadge status={status} />
       </div>
     </div>
   );
@@ -227,7 +222,7 @@ function ConnectForm({
   onSubmit: (event: React.FormEvent) => void;
 }) {
   return (
-    <section className="mx-auto max-w-md">
+    <section className="max-w-md">
       <form onSubmit={onSubmit} className="space-y-3">
         <input
           type="text"
