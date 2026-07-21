@@ -203,9 +203,7 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
             <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-10 p-4">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-defualt-text">
-                    Zortout Sync
-                  </h3>
+                  <img src="/images/zortout.png" alt="Zortout" className="size-10" />
                   <div className="mt-2">
                     <ZortoutSyncStatusBadge
                       syncedAt={user.zortout?.synced_at ?? false}

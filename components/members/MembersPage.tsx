@@ -164,7 +164,7 @@ export default function MembersPage() {
               <RefreshCw
                 className={`size-4 ${syncAllLoading ? "animate-spin" : ""}`}
               />
-              Sync ทั้งหมดไป Zortout
+              Sync ข้อมูลสมาชิกไป Zortout
             </button>
           ) : null}
 
@@ -263,7 +263,7 @@ export default function MembersPage() {
                     <td className="px-4 py-4 text-gray-100">
                       {formatDateTime(user.create_date)}
                     </td>
-                    <td className="px-4 py-4">
+                    <td className="px-4 py-4 text-sm">
                       <ActionMenu
                         ariaLabel={`ตัวเลือกสมาชิก ${user.display_name}`}
                         items={[
@@ -279,10 +279,10 @@ export default function MembersPage() {
                                   label:
                                     syncingUserId === user.id
                                       ? "กำลัง sync..."
-                                      : "Sync ไป Zortout",
+                                      : "Sync",
                                   icon: (
                                     <RefreshCw
-                                      className={`size-4 ${syncingUserId === user.id ? "animate-spin" : ""}`}
+                                      className={`size-2 ${syncingUserId === user.id ? "animate-spin" : ""}`}
                                     />
                                   ),
                                   onClick: () => void handleSyncUser(user),
