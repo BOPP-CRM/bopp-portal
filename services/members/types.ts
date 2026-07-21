@@ -12,6 +12,13 @@ export type PortalTier = {
   name: string;
 };
 
+export type PortalUserZortout = {
+  contact_id: number | false;
+  synced_at: string | false;
+  sync_status: "pending" | "synced" | "failed" | "skipped" | false;
+  sync_error: string | false;
+};
+
 export type PortalUser = {
   id: number;
   display_name: string;
@@ -27,6 +34,7 @@ export type PortalUser = {
   tier: PortalTier;
   points: PortalUserPoint[];
   create_date: string;
+  zortout?: PortalUserZortout;
 };
 
 export type UsersListResponse = {
