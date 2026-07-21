@@ -2,13 +2,15 @@
 
 import BoppMcpPanel from "@/components/connections/BoppMcpPanel";
 import ZortoutPanel from "@/components/connections/ZortoutPanel";
+import OmisellPanel from "./OmisellPanel";
 import { useEffect, useState } from "react";
 
-type Tab = "bopp-mcp" | "zortout";
+type Tab = "bopp-mcp" | "zortout" | "omisell";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "bopp-mcp", label: "BOPP MCP" },
   { id: "zortout", label: "Zortout" },
+  { id: "omisell", label: "Omisell" },
 ];
 
 const CONNECTIONS_TAB_KEY = "connections_tab";
@@ -35,7 +37,9 @@ export default function ConnectionsPage() {
   return (
     <div className="p-4 md:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-defualt-text">การเชื่อมต่อ</h1>
+        <h1 className="text-2xl font-semibold text-defualt-text">
+          การเชื่อมต่อ
+        </h1>
         <p className="mt-1 text-sm text-gray-100">
           ตั้งค่าการเชื่อมต่อกับระบบภายนอก
         </p>
@@ -61,6 +65,7 @@ export default function ConnectionsPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {tab === "bopp-mcp" ? <BoppMcpPanel /> : null}
         {tab === "zortout" ? <ZortoutPanel /> : null}
+        {tab === "omisell" ? <OmisellPanel /> : null}
       </div>
     </div>
   );
