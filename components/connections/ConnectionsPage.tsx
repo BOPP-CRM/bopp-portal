@@ -2,8 +2,8 @@
 
 import BoppMcpPanel from "@/components/connections/BoppMcpPanel";
 import ZortoutPanel from "@/components/connections/ZortoutPanel";
-import { useState } from "react";
 import OmisellPanel from "./OmisellPanel";
+import { useEffect, useState } from "react";
 
 type Tab = "bopp-mcp" | "zortout" | "omisell";
 
@@ -13,8 +13,26 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "omisell", label: "Omisell" },
 ];
 
+const CONNECTIONS_TAB_KEY = "connections_tab";
+
+function isTab(value: string | null): value is Tab {
+  return value === "bopp-mcp" || value === "zortout";
+}
+
 export default function ConnectionsPage() {
   const [tab, setTab] = useState<Tab>("bopp-mcp");
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(CONNECTIONS_TAB_KEY);
+    if (isTab(saved)) {
+      setTab(saved);
+    }
+  }, []);
+
+  const selectTab = (id: Tab) => {
+    setTab(id);
+    window.localStorage.setItem(CONNECTIONS_TAB_KEY, id);
+  };
 
   return (
     <div className="p-4 md:p-8">
@@ -32,7 +50,7 @@ export default function ConnectionsPage() {
           <button
             key={item.id}
             type="button"
-            onClick={() => setTab(item.id)}
+            onClick={() => selectTab(item.id)}
             className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
               tab === item.id
                 ? "bg-brown-100 text-white"

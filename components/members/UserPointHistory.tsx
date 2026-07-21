@@ -105,7 +105,7 @@ export default function UserPointHistory({
     () => [
       { value: "all" as const, label: "ทุกประเภท" },
       { value: "earn" as const, label: "เพิ่ม" },
-      { value: "spend" as const, label: "ลด" },
+      { value: "spend" as const, label: "ลดคะแนน" },
     ],
     [],
   );
