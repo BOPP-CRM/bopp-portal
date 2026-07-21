@@ -3,13 +3,20 @@
 import AdjustPointModal from "@/components/members/AdjustPointModal";
 import UserCoupons from "@/components/members/UserCoupons";
 import UserPointHistory from "@/components/members/UserPointHistory";
+import ZortoutMemberSyncProgress, {
+  ZortoutSyncStatusBadge,
+} from "@/components/members/ZortoutMemberSyncProgress";
 import { MemberDetailSkeleton } from "@/components/util/Skeleton";
 import { getUser } from "@/services/members/members";
 import type { PortalUser, PortalUserPoint } from "@/services/members/types";
+import {
+  getZortoutStatus,
+  syncUserToZortout,
+} from "@/services/zortout/zortout";
 import { handleError } from "@/utils/errors";
 import { formatDateTime } from "@/utils/datetime";
 import { displayValue, formatNumber, formatUserAddress } from "@/utils/format";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -22,7 +29,10 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
+  const [zortoutReady, setZortoutReady] = useState(false);
+  const [syncingZortout, setSyncingZortout] = useState(false);
 
   const loadUser = useCallback(async () => {
     setError(null);
@@ -44,6 +54,21 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
   }, [loadUser]);
 
   useEffect(() => {
+    const loadZortoutStatus = async () => {
+      try {
+        const response = await getZortoutStatus();
+        setZortoutReady(
+          response.zortout.enabled &&
+            response.zortout.api_credentials_configured,
+        );
+      } catch {
+        setZortoutReady(false);
+      }
+    };
+    void loadZortoutStatus();
+  }, []);
+
+  useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
       if (event.persisted) {
         void loadUser();
@@ -59,6 +84,22 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
     await loadUser();
     setActivityRefreshKey((key) => key + 1);
     setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
+  const handleSyncZortout = async () => {
+    setSyncingZortout(true);
+    setSyncError(null);
+    try {
+      await syncUserToZortout(userId);
+      setSuccessMessage("Sync ไป Zortout สำเร็จ");
+      await loadUser();
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (syncFailure) {
+      setSyncError(handleError(syncFailure).message);
+      await loadUser();
+    } finally {
+      setSyncingZortout(false);
+    }
   };
 
   if (loading) {
@@ -95,6 +136,18 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
       {successMessage ? (
         <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
           {successMessage}
+        </div>
+      ) : null}
+
+      {syncError ? (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-100">
+          {syncError}
+        </div>
+      ) : null}
+
+      {zortoutReady ? (
+        <div className="mb-4">
+          <ZortoutMemberSyncProgress onComplete={() => void loadUser()} />
         </div>
       ) : null}
 
@@ -145,6 +198,41 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
               className="sm:col-span-2"
             />
           </dl>
+
+          {zortoutReady ? (
+            <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-10 p-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-defualt-text">
+                    Zortout Sync
+                  </h3>
+                  <div className="mt-2">
+                    <ZortoutSyncStatusBadge
+                      syncedAt={user.zortout?.synced_at ?? false}
+                      syncStatus={user.zortout?.sync_status ?? false}
+                      syncError={user.zortout?.sync_error ?? false}
+                    />
+                  </div>
+                  {user.zortout?.contact_id ? (
+                    <p className="mt-2 text-xs text-gray-100">
+                      Contact ID: {user.zortout.contact_id}
+                    </p>
+                  ) : null}
+                </div>
+                <button
+                  type="button"
+                  disabled={syncingZortout}
+                  onClick={() => void handleSyncZortout()}
+                  className="inline-flex items-center justify-center gap-2 rounded-4xl border border-brown-100 px-4 py-2 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <RefreshCw
+                    className={`size-4 ${syncingZortout ? "animate-spin" : ""}`}
+                  />
+                  {syncingZortout ? "กำลัง sync..." : "Sync ไป Zortout"}
+                </button>
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">

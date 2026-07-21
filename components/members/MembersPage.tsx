@@ -1,9 +1,18 @@
 "use client";
 
+import ZortoutMemberSyncProgress, {
+  ZortoutSyncStatusBadge,
+} from "@/components/members/ZortoutMemberSyncProgress";
 import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
+import dialog from "@/components/util/dialog";
 import { getUsers } from "@/services/members/members";
 import type { PortalUser } from "@/services/members/types";
+import {
+  getZortoutStatus,
+  startZortoutMemberSync,
+  syncUserToZortout,
+} from "@/services/zortout/zortout";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import {
@@ -11,7 +20,7 @@ import {
   formatNumber,
   getDefaultPointBalance,
 } from "@/utils/format";
-import { ChevronLeft, ChevronRight, Eye, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, RefreshCw, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -26,6 +35,12 @@ export default function MembersPage() {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [zortoutReady, setZortoutReady] = useState(false);
+  const [syncingUserId, setSyncingUserId] = useState<number | null>(null);
+  const [syncAllLoading, setSyncAllLoading] = useState(false);
+  const [syncJobRefreshKey, setSyncJobRefreshKey] = useState(0);
+  const [activeSyncJobId, setActiveSyncJobId] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadUsers = useCallback(async () => {
     setError(null);
@@ -48,9 +63,24 @@ export default function MembersPage() {
     }
   }, [offset, search]);
 
+  const loadZortoutStatus = useCallback(async () => {
+    try {
+      const response = await getZortoutStatus();
+      setZortoutReady(
+        response.zortout.enabled && response.zortout.api_credentials_configured,
+      );
+    } catch {
+      setZortoutReady(false);
+    }
+  }, []);
+
   useEffect(() => {
     void loadUsers();
-  }, [loadUsers]);
+  }, [loadUsers, refreshKey]);
+
+  useEffect(() => {
+    void loadZortoutStatus();
+  }, [loadZortoutStatus]);
 
   useEffect(() => {
     const handlePageShow = (event: PageTransitionEvent) => {
@@ -62,6 +92,43 @@ export default function MembersPage() {
     window.addEventListener("pageshow", handlePageShow);
     return () => window.removeEventListener("pageshow", handlePageShow);
   }, [loadUsers]);
+
+  const handleSyncAll = async () => {
+    const result = await dialog.fire({
+      title: "Sync สมาชิกทั้งหมดไป Zortout",
+      description: `จะ sync สมาชิกทั้งหมด ${formatNumber(total)} คนไป Zortout โดยค้นหาจากเบอร์โทรหรืออีเมลก่อน แล้วอัปเดตหรือเพิ่ม contact ให้อัตโนมัติ`,
+      confirmText: "เริ่ม sync",
+      cancelText: "ยกเลิก",
+    });
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    setSyncAllLoading(true);
+    setError(null);
+    try {
+      const response = await startZortoutMemberSync();
+      setActiveSyncJobId(response.job.id);
+      setSyncJobRefreshKey((key) => key + 1);
+    } catch (syncError) {
+      setError(handleError(syncError).message);
+    } finally {
+      setSyncAllLoading(false);
+    }
+  };
+
+  const handleSyncUser = async (user: PortalUser) => {
+    setSyncingUserId(user.id);
+    setError(null);
+    try {
+      await syncUserToZortout(user.id);
+      setRefreshKey((key) => key + 1);
+    } catch (syncError) {
+      setError(handleError(syncError).message);
+    } finally {
+      setSyncingUserId(null);
+    }
+  };
 
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -86,21 +153,47 @@ export default function MembersPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSearch} className="relative w-full md:max-w-sm">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
-          <input
-            type="search"
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="ค้นหาชื่อ, เบอร์โทร..."
-            className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
-          />
-        </form>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {zortoutReady ? (
+            <button
+              type="button"
+              disabled={syncAllLoading}
+              onClick={() => void handleSyncAll()}
+              className="inline-flex items-center justify-center gap-2 rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`size-4 ${syncAllLoading ? "animate-spin" : ""}`}
+              />
+              Sync ทั้งหมดไป Zortout
+            </button>
+          ) : null}
+
+          <form onSubmit={handleSearch} className="relative w-full md:max-w-sm">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="ค้นหาชื่อ, เบอร์โทร..."
+              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+            />
+          </form>
+        </div>
       </div>
+
+      {zortoutReady ? (
+        <div className="mb-4">
+          <ZortoutMemberSyncProgress
+            refreshKey={syncJobRefreshKey}
+            initialJobId={activeSyncJobId}
+            onComplete={() => setRefreshKey((key) => key + 1)}
+          />
+        </div>
+      ) : null}
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <TableSkeleton rows={6} columns={6} avatarColumn />
+          <TableSkeleton rows={6} columns={7} avatarColumn />
         ) : error ? (
           <div className="p-6 text-sm text-red-100">{error}</div>
         ) : users.length === 0 ? (
@@ -114,6 +207,9 @@ export default function MembersPage() {
                   <th className="px-4 py-4 font-medium">เบอร์โทร</th>
                   <th className="px-4 py-4 font-medium">ระดับ</th>
                   <th className="px-4 py-4 font-medium">Point</th>
+                  {zortoutReady ? (
+                    <th className="px-4 py-4 font-medium">Zortout</th>
+                  ) : null}
                   <th className="px-4 py-4 font-medium">วันที่สมัคร</th>
                   <th className="px-4 py-4 font-medium" />
                 </tr>
@@ -155,6 +251,15 @@ export default function MembersPage() {
                     <td className="px-4 py-4 font-medium text-brown-100">
                       {formatNumber(getDefaultPointBalance(user.points))}
                     </td>
+                    {zortoutReady ? (
+                      <td className="px-4 py-4">
+                        <ZortoutSyncStatusBadge
+                          syncedAt={user.zortout?.synced_at ?? false}
+                          syncStatus={user.zortout?.sync_status ?? false}
+                          syncError={user.zortout?.sync_error ?? false}
+                        />
+                      </td>
+                    ) : null}
                     <td className="px-4 py-4 text-gray-100">
                       {formatDateTime(user.create_date)}
                     </td>
@@ -168,6 +273,23 @@ export default function MembersPage() {
                             onClick: () =>
                               router.push(`/dashboard/members/${user.id}`),
                           },
+                          ...(zortoutReady
+                            ? [
+                                {
+                                  label:
+                                    syncingUserId === user.id
+                                      ? "กำลัง sync..."
+                                      : "Sync ไป Zortout",
+                                  icon: (
+                                    <RefreshCw
+                                      className={`size-4 ${syncingUserId === user.id ? "animate-spin" : ""}`}
+                                    />
+                                  ),
+                                  onClick: () => void handleSyncUser(user),
+                                  disabled: syncingUserId === user.id,
+                                },
+                              ]
+                            : []),
                         ]}
                       />
                     </td>

@@ -88,3 +88,46 @@ export type ZortoutWebhookLogsParams = {
   limit?: number;
   offset?: number;
 };
+
+export type ZortoutMemberSyncJobUser = {
+  id: number;
+  display_name: string;
+};
+
+export type ZortoutMemberSyncJob = {
+  id: number;
+  state: "pending" | "running" | "done" | "failed" | "cancelled";
+  total: number;
+  processed: number;
+  succeeded: number;
+  failed: number;
+  last_error: string | false;
+  started_at: string | false;
+  finished_at: string | false;
+  current_user: ZortoutMemberSyncJobUser | false;
+};
+
+export type ZortoutMemberSyncJobResponse = {
+  job: ZortoutMemberSyncJob;
+  message?: string;
+};
+
+export type ZortoutMemberSyncActiveResponse = {
+  job: ZortoutMemberSyncJob | false;
+};
+
+export type ZortoutMemberSyncUserResult = {
+  contact_id: number | false;
+  synced_at: string | false;
+  sync_status: "pending" | "synced" | "failed" | "skipped" | false;
+  sync_error: string | false;
+};
+
+export type ZortoutMemberSyncUserResponse = {
+  result?: {
+    action: "created" | "updated";
+    contact_id: number;
+  };
+  user: ZortoutMemberSyncUserResult;
+  message?: string;
+};
