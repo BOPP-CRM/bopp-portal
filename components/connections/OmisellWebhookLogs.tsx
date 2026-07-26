@@ -116,6 +116,10 @@ export default function OmisellWebhookLogs() {
                         <span className="font-medium text-green-700">
                           +{formatNumber(log.reward_points)}
                         </span>
+                      ) : log.points_revoked ? (
+                        <span className="font-medium text-orange-700">
+                          -{formatNumber(log.reward_points)}
+                        </span>
                       ) : (
                         <span className="text-gray-100">-</span>
                       )}
@@ -219,6 +223,10 @@ function LogCard({ log }: { log: OmisellWebhookLog }) {
               <span className="ml-1 font-medium text-green-700">
                 (+{formatNumber(log.reward_points)})
               </span>
+            ) : log.points_revoked ? (
+              <span className="ml-1 font-medium text-orange-700">
+                (-{formatNumber(log.reward_points)})
+              </span>
             ) : null}
           </dd>
         </div>
@@ -262,6 +270,14 @@ function LogStatusBadge({ log }: { log: OmisellWebhookLog }) {
     return (
       <span className="inline-block rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
         ได้คะแนน
+      </span>
+    );
+  }
+
+  if (log.points_revoked) {
+    return (
+      <span className="inline-block rounded-full bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-700">
+        หักคะแนนคืน
       </span>
     );
   }
