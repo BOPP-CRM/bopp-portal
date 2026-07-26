@@ -46,6 +46,7 @@ export type OmisellWebhookLog = {
   customer_phone: string | false;
   customer_email: string | false;
   points_awarded: boolean;
+  points_revoked: boolean;
   reward_points: number;
   member: OmisellWebhookLogMember | false;
 };

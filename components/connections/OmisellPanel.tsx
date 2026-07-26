@@ -20,6 +20,7 @@ const COUNTRY_OPTIONS = [{ value: "TH", label: "TH - Thailand" }];
 export default function OmisellPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<OmisellStatus | null>(null);
@@ -68,6 +69,19 @@ export default function OmisellPanel() {
       setError("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return;
     }
+
+    if (isEditing) {
+      const result = await dialog.fire({
+        title: "บันทึกข้อมูลการเชื่อมต่อใหม่",
+        description:
+          "ระบบจะใช้ API Key / Secret ใหม่แทนค่าเดิมทันที ตรวจสอบให้แน่ใจว่าข้อมูลถูกต้องก่อนบันทึก",
+        icon: <Info className="text-brown-100" />,
+        confirmText: "บันทึก",
+        confirmVariant: "primary",
+      });
+      if (!result.isConfirmed) return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     try {
@@ -78,11 +92,28 @@ export default function OmisellPanel() {
         country,
       });
       setStatus(response.omisell);
+      setIsEditing(false);
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleStartEditing = () => {
+    setError(null);
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setError(null);
+    if (status) {
+      setApiKey(status.api_key ?? "");
+      setApiSecret(status.api_secret ?? "");
+      setSellerId(status.seller_id ?? "");
+      setCountry(status.country ?? "TH");
+    }
+    setIsEditing(false);
   };
 
   const handleRegenerateSecret = async () => {
@@ -156,8 +187,14 @@ export default function OmisellPanel() {
           </p>
         </div>
 
-        {isEnabled && (
+        {isEnabled && !isEditing && (
           <div className="flex shrink-0 flex-wrap gap-2">
+            <ActionButton
+              disabled={isSubmitting}
+              onClick={handleStartEditing}
+              label="แก้ไขข้อมูลการเชื่อมต่อ"
+              variant="outlined"
+            />
             <ActionButton
               disabled={isSubmitting}
               onClick={() => void handleRegenerateSecret()}
@@ -192,7 +229,7 @@ export default function OmisellPanel() {
               value={apiKey}
               onChange={setApiKey}
               placeholder="กรอก API Key"
-              disabled={isEnabled}
+              disabled={isEnabled && !isEditing}
             />
             <FormField
               label="Omisell API Secret"
@@ -200,7 +237,7 @@ export default function OmisellPanel() {
               value={apiSecret}
               onChange={setApiSecret}
               placeholder="กรอก API Secret"
-              disabled={isEnabled}
+              disabled={isEnabled && !isEditing}
             />
             <FormField
               label="Omisell Seller ID"
@@ -208,28 +245,38 @@ export default function OmisellPanel() {
               value={sellerId}
               onChange={setSellerId}
               placeholder="กรอก Seller ID"
-              disabled={isEnabled}
+              disabled={isEnabled && !isEditing}
             />
             <CountrySelect
               label="Omisell Country"
               required
               value={country}
               onChange={setCountry}
-              disabled={isEnabled}
+              disabled={isEnabled && !isEditing}
             />
           </div>
 
-          {!isEnabled && (
-            <div className="mt-5">
+          {(!isEnabled || isEditing) && (
+            <div className="mt-5 flex flex-wrap gap-2">
               <ActionButton
                 disabled={isSubmitting}
                 onClick={() => void handleEnable()}
                 label={
                   isSubmitting
-                    ? "กำลังเปิดการเชื่อมต่อ..."
-                    : "บันทึกและเปิด Omisell Enabled"
+                    ? "กำลังบันทึก..."
+                    : isEditing
+                      ? "บันทึกการเปลี่ยนแปลง"
+                      : "บันทึกและเปิด Omisell Enabled"
                 }
               />
+              {isEditing && (
+                <ActionButton
+                  disabled={isSubmitting}
+                  onClick={handleCancelEditing}
+                  label="ยกเลิก"
+                  variant="outlined"
+                />
+              )}
             </div>
           )}
         </div>
@@ -255,7 +302,9 @@ export default function OmisellPanel() {
               <CopyField
                 label="Client Secret"
                 value={status.authorization ?? ""}
-                onCopy={(value) => void copyToClipboard(value, " Client Secret ")}
+                onCopy={(value) =>
+                  void copyToClipboard(value, " Client Secret ")
+                }
               />
             </div>
           </div>
