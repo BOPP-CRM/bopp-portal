@@ -7,6 +7,7 @@ import {
   Building2,
   LayoutDashboard,
   Menu as MenuIcon,
+  Package,
   Plug,
   QrCode,
   Receipt,
@@ -85,6 +86,12 @@ export default function Menu() {
       requiresWarranty: true,
     },
     {
+      icon: <Package className={iconClassName} />,
+      label: "สินค้ารับประกัน",
+      path: "/dashboard/warranties/products",
+      requiresWarranty: true,
+    },
+    {
       icon: <BadgeCheck className={iconClassName} />,
       label: "ระดับสมาชิก",
       path: "/dashboard/tier",
@@ -128,6 +135,18 @@ export default function Menu() {
       return canAccessPath(role, item.path);
     });
   }, [me]);
+
+  const activePath = useMemo(() => {
+    const matches = visibleMenuItems
+      .map((item) => item.path)
+      .filter((path) =>
+        path === "/dashboard"
+          ? pathname === "/dashboard"
+          : pathname === path || pathname.startsWith(`${path}/`),
+      )
+      .sort((a, b) => b.length - a.length);
+    return matches[0] ?? null;
+  }, [pathname, visibleMenuItems]);
 
   const handleSidebarToggle = () => {
     if (isMobileOpen) {
@@ -191,11 +210,7 @@ export default function Menu() {
               path={item.path}
               icon={item.icon}
               label={item.label}
-              isActive={
-                item.path === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.path)
-              }
+              isActive={item.path === activePath}
               isCollapsed={isCollapsed}
               onClick={() => setIsMobileOpen(false)}
             />

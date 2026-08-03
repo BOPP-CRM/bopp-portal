@@ -48,7 +48,14 @@ export function useZortoutMemberSyncJob(
       trackedJobIdRef.current = activeJob?.id ?? null;
       return activeJob;
     } catch (loadError) {
-      setError(handleError(loadError).message);
+      const appError = handleError(loadError);
+      // Missing endpoint / job should not block the members page.
+      if (appError.status === 404) {
+        setJob(null);
+        trackedJobIdRef.current = null;
+        return null;
+      }
+      setError(appError.message);
       return null;
     }
   }, []);
