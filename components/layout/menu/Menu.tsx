@@ -7,6 +7,7 @@ import {
   Building2,
   LayoutDashboard,
   Menu as MenuIcon,
+  Package,
   Plug,
   QrCode,
   Receipt,
@@ -82,6 +83,12 @@ export default function Menu() {
       icon: <ShieldCheck className={iconClassName} />,
       label: "รับประกันสินค้า",
       path: "/dashboard/warranties",
+      requiresWarranty: true,
+    },
+    {
+      icon: <Package className={iconClassName} />,
+      label: "สินค้ารับประกัน",
+      path: "/dashboard/warranties/products",
       requiresWarranty: true,
     },
     {
