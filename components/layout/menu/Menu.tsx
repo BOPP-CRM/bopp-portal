@@ -136,6 +136,18 @@ export default function Menu() {
     });
   }, [me]);
 
+  const activePath = useMemo(() => {
+    const matches = visibleMenuItems
+      .map((item) => item.path)
+      .filter((path) =>
+        path === "/dashboard"
+          ? pathname === "/dashboard"
+          : pathname === path || pathname.startsWith(`${path}/`),
+      )
+      .sort((a, b) => b.length - a.length);
+    return matches[0] ?? null;
+  }, [pathname, visibleMenuItems]);
+
   const handleSidebarToggle = () => {
     if (isMobileOpen) {
       setIsMobileOpen(false);
@@ -198,11 +210,7 @@ export default function Menu() {
               path={item.path}
               icon={item.icon}
               label={item.label}
-              isActive={
-                item.path === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.path)
-              }
+              isActive={item.path === activePath}
               isCollapsed={isCollapsed}
               onClick={() => setIsMobileOpen(false)}
             />
