@@ -5,25 +5,17 @@ import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   createWarrantyContributor,
-  createWarrantyProduct,
   createWarrantyStatus,
   deleteWarrantyContributor,
-  deleteWarrantyProduct,
   deleteWarrantyStatus,
   getWarrantyConfig,
   updateWarrantyContributor,
-  updateWarrantyProduct,
   updateWarrantyStatusConfig,
   type WarrantyContributor,
-  type WarrantyProduct,
   type WarrantyStatus,
 } from "@/services/warranties/warranties";
 import { handleError } from "@/utils/errors";
-import { formatNumber } from "@/utils/format";
-import { getProxiedImageUrl } from "@/utils/image";
-import { readFileAsBase64 } from "@/utils/file";
-import { useApp } from "@/providers/app-provider";
-import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -31,64 +23,34 @@ const inputClassName =
   "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
 
 type EditTarget =
-  | { type: "product"; item: WarrantyProduct | null }
   | { type: "contributor"; item: WarrantyContributor | null }
   | { type: "status"; item: WarrantyStatus | null }
   | null;
 
 export default function WarrantyConfigPage() {
-  const { me } = useApp();
-  const [products, setProducts] = useState<WarrantyProduct[]>([]);
   const [contributors, setContributors] = useState<WarrantyContributor[]>([]);
   const [statuses, setStatuses] = useState<WarrantyStatus[]>([]);
-  const [warrantyEnabled, setWarrantyEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [editTarget, setEditTarget] = useState<EditTarget>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [productImageBase64, setProductImageBase64] = useState<string | null>(
-    null,
-  );
-  const [productImagePreview, setProductImagePreview] = useState<string | null>(
-    null,
-  );
-  const [productImageFilename, setProductImageFilename] = useState("");
 
   const loadConfig = useCallback(async () => {
     setError(null);
     setLoading(true);
     try {
       const config = await getWarrantyConfig();
-      setProducts(config.products ?? []);
       setContributors(config.contributors ?? []);
       setStatuses(config.statuses ?? []);
-      setWarrantyEnabled(
-        config.enabled ?? me?.partner.warranty_enabled ?? false,
-      );
     } catch (loadError) {
       setError(handleError(loadError).message);
     } finally {
       setLoading(false);
     }
-  }, [me?.partner.warranty_enabled]);
-
-  const openProductModal = (item: WarrantyProduct | null) => {
-    setProductImageBase64(null);
-    setProductImageFilename("");
-    setProductImagePreview(
-      item?.image_url ? getProxiedImageUrl(item.image_url) : null,
-    );
-    setEditTarget({ type: "product", item });
-  };
+  }, []);
 
   const closeEditModal = () => {
-    if (productImagePreview?.startsWith("blob:")) {
-      URL.revokeObjectURL(productImagePreview);
-    }
-    setProductImageBase64(null);
-    setProductImagePreview(null);
-    setProductImageFilename("");
     setEditTarget(null);
   };
 
@@ -101,13 +63,9 @@ export default function WarrantyConfigPage() {
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  const handleDelete = async (
-    type: "product" | "contributor" | "status",
-    id: number,
-  ) => {
+  const handleDelete = async (type: "contributor" | "status", id: number) => {
     setError(null);
     try {
-      if (type === "product") await deleteWarrantyProduct(id);
       if (type === "contributor") await deleteWarrantyContributor(id);
       if (type === "status") await deleteWarrantyStatus(id);
       await loadConfig();
@@ -126,24 +84,6 @@ export default function WarrantyConfigPage() {
     setError(null);
 
     try {
-      if (editTarget.type === "product") {
-        const payload = {
-          name: String(formData.get("name") || "").trim(),
-          description:
-            String(formData.get("description") || "").trim() || undefined,
-          sku: String(formData.get("sku") || "").trim() || undefined,
-          cost_price: Number(formData.get("cost_price") || 0),
-          sell_price: Number(formData.get("sell_price") || 0),
-          active: formData.get("active") === "on",
-          ...(productImageBase64 ? { image_base64: productImageBase64 } : {}),
-        };
-        if (editTarget.item) {
-          await updateWarrantyProduct(editTarget.item.id, payload);
-        } else {
-          await createWarrantyProduct(payload);
-        }
-      }
-
       if (editTarget.type === "contributor") {
         const payload = {
           name: String(formData.get("name") || "").trim(),
@@ -198,7 +138,7 @@ export default function WarrantyConfigPage() {
             ตั้งค่ารับประกันสินค้า
           </h1>
           <p className="mt-1 text-sm text-gray-100">
-            จัดการสินค้า ช่องทางการซื้อ และสถานะที่แสดงในระบบ
+            จัดการช่องทางการซื้อและสถานะที่แสดงในระบบ
           </p>
         </div>
       </div>
@@ -219,37 +159,6 @@ export default function WarrantyConfigPage() {
         <TableSkeleton rows={8} columns={5} />
       ) : (
         <div className="space-y-8">
-          <ConfigSection
-            title="สินค้า"
-            description="รายการสินค้าที่ member เลือกได้ในฟอร์มลงทะเบียน"
-            actionLabel="เพิ่มสินค้า"
-            onAction={() => openProductModal(null)}
-          >
-            {products.length === 0 ? (
-              <EmptyState text="ยังไม่มีสินค้า" />
-            ) : (
-              <ConfigTable
-                headers={["รูป", "ชื่อ", "SKU", "ราคาทุน", "ราคาขาย", ""]}
-                rows={products.map((product) => [
-                  <ProductImage
-                    key={`product-image-${product.id}`}
-                    src={product.image_url}
-                    alt={product.name}
-                  />,
-                  product.name,
-                  product.sku || "-",
-                  formatNumber(product.cost_price),
-                  formatNumber(product.sell_price),
-                  <RowActions
-                    key={`product-${product.id}`}
-                    onEdit={() => openProductModal(product)}
-                    onDelete={() => void handleDelete("product", product.id)}
-                  />,
-                ])}
-              />
-            )}
-          </ConfigSection>
-
           <ConfigSection
             title="ช่องทางการซื้อ"
             description="ช่องทางที่ member เลือกได้ เช่น ออนไลน์ ร้านค้า ตัวแทนจำหน่าย"
@@ -312,35 +221,6 @@ export default function WarrantyConfigPage() {
         <EditModal
           target={editTarget}
           isSubmitting={isSubmitting}
-          productImagePreview={productImagePreview}
-          productImageFilename={productImageFilename}
-          onProductImageChange={async (file) => {
-            if (!file) {
-              setProductImageBase64(null);
-              setProductImageFilename("");
-              setProductImagePreview(
-                editTarget.type === "product" && editTarget.item?.image_url
-                  ? getProxiedImageUrl(editTarget.item.image_url)
-                  : null,
-              );
-              return;
-            }
-
-            if (!file.type.startsWith("image/")) {
-              setError("กรุณาเลือกไฟล์รูปภาพ");
-              return;
-            }
-
-            try {
-              const base64 = await readFileAsBase64(file);
-              setProductImageBase64(base64);
-              setProductImageFilename(file.name);
-              setProductImagePreview(URL.createObjectURL(file));
-              setError(null);
-            } catch {
-              setError("อ่านไฟล์รูปภาพไม่สำเร็จ");
-            }
-          }}
           onClose={closeEditModal}
           onSubmit={handleSubmit}
         />
@@ -437,11 +317,6 @@ function RowActions({
           icon: <Pencil className="size-4" />,
           onClick: onEdit,
         },
-        // {
-        //   label: "ลบ",
-        //   icon: <Trash2 className="size-4" />,
-        //   onClick: onDelete,
-        // },
       ]}
     />
   );
@@ -451,44 +326,18 @@ function EmptyState({ text }: { text: string }) {
   return <p className="text-sm text-gray-100">{text}</p>;
 }
 
-function ProductImage({ src, alt }: { src?: string | false; alt: string }) {
-  const imageUrl = getProxiedImageUrl(src);
-  if (!imageUrl) {
-    return (
-      <div className="flex size-12 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-10 text-xs text-gray-100">
-        ไม่มีรูป
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={imageUrl}
-      alt={alt}
-      className="size-12 rounded-xl border border-gray-200 object-cover"
-    />
-  );
-}
-
 function EditModal({
   target,
   isSubmitting,
-  productImagePreview,
-  productImageFilename,
-  onProductImageChange,
   onClose,
   onSubmit,
 }: {
   target: Exclude<EditTarget, null>;
   isSubmitting: boolean;
-  productImagePreview: string | null;
-  productImageFilename: string;
-  onProductImageChange: (file: File | null) => void | Promise<void>;
   onClose: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const titles = {
-    product: target.item ? "แก้ไขสินค้า" : "เพิ่มสินค้า",
     contributor: target.item ? "แก้ไขช่องทาง" : "เพิ่มช่องทาง",
     status: target.item ? "แก้ไขสถานะ" : "เพิ่มสถานะ",
   };
@@ -510,92 +359,6 @@ function EditModal({
         </h2>
 
         <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-          {target.type === "product" ? (
-            <>
-              <FormField label="รูปสินค้า">
-                <div className="space-y-3">
-                  {productImagePreview ? (
-                    <img
-                      src={productImagePreview}
-                      alt="Product preview"
-                      className="max-h-40 rounded-xl border border-gray-200 object-contain"
-                    />
-                  ) : null}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) =>
-                      void onProductImageChange(event.target.files?.[0] ?? null)
-                    }
-                    className="block w-full text-sm text-gray-100 file:mr-4 file:rounded-4xl file:border-0 file:bg-brown-yellow-5 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brown-100"
-                  />
-                  {productImageFilename ? (
-                    <p className="text-xs text-gray-100">
-                      {productImageFilename}
-                    </p>
-                  ) : null}
-                </div>
-              </FormField>
-              <FormField label="ชื่อสินค้า *">
-                <input
-                  name="name"
-                  required
-                  defaultValue={target.item?.name ?? ""}
-                  className={inputClassName}
-                />
-              </FormField>
-              <FormField label="SKU">
-                <input
-                  name="sku"
-                  defaultValue={target.item?.sku ? String(target.item.sku) : ""}
-                  className={inputClassName}
-                />
-              </FormField>
-              <FormField label="รายละเอียด">
-                <textarea
-                  name="description"
-                  rows={3}
-                  defaultValue={
-                    target.item?.description
-                      ? String(target.item.description)
-                      : ""
-                  }
-                  className={`${inputClassName} resize-none`}
-                />
-              </FormField>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField label="ราคาทุน">
-                  <input
-                    name="cost_price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    defaultValue={target.item?.cost_price ?? 0}
-                    className={inputClassName}
-                  />
-                </FormField>
-                <FormField label="ราคาขาย">
-                  <input
-                    name="sell_price"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    defaultValue={target.item?.sell_price ?? 0}
-                    className={inputClassName}
-                  />
-                </FormField>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-defualt-text">
-                <input
-                  type="checkbox"
-                  name="active"
-                  defaultChecked={target.item?.active ?? true}
-                />
-                เปิดใช้งาน
-              </label>
-            </>
-          ) : null}
-
           {target.type === "contributor" ? (
             <>
               <FormField label="ชื่อช่องทาง *">

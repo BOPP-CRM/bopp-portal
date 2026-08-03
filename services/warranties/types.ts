@@ -7,6 +7,12 @@ export type WarrantyUser = {
   email?: string | false;
 };
 
+export type WarrantyProductSnPattern = {
+  id: number;
+  pattern: string;
+  sequence?: number;
+};
+
 export type WarrantyProduct = {
   id: number;
   name: string;
@@ -16,6 +22,7 @@ export type WarrantyProduct = {
   sell_price: number;
   image_url?: string | false;
   active?: boolean;
+  sn_patterns?: WarrantyProductSnPattern[];
 };
 
 export type WarrantyContributor = {
@@ -101,6 +108,7 @@ export type CreateWarrantyProductRequest = {
   sell_price?: number;
   image_base64?: string;
   active?: boolean;
+  sn_patterns?: string[];
 };
 
 export type UpdateWarrantyProductRequest = Partial<CreateWarrantyProductRequest>;
