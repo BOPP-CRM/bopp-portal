@@ -9,6 +9,7 @@ import type {
   ZortoutWebhookLogsParams,
   ZortoutWebhookLogsResponse,
 } from "@/services/zortout/types";
+import { handleError } from "@/utils/errors";
 
 const mutationConfig = { skipErrorAlert: true };
 
@@ -89,15 +90,26 @@ export const startZortoutMemberSync = async (userIds?: number[]) => {
 };
 
 export const getActiveZortoutMemberSyncJob = async () => {
-  const res = await apiClient.client.get<ZortoutMemberSyncActiveResponse>(
-    "/portal/zortout/members/sync/active",
-  );
-  return res.data;
+  try {
+    const res = await apiClient.client.get<ZortoutMemberSyncActiveResponse>(
+      "/portal/zortout/members/sync/active",
+      mutationConfig,
+    );
+    return res.data;
+  } catch (error) {
+    const appError = handleError(error);
+    // No active job, or endpoint not deployed yet — treat as idle.
+    if (appError.status === 404) {
+      return { job: false as const };
+    }
+    throw appError;
+  }
 };
 
 export const getZortoutMemberSyncJob = async (jobId: number) => {
   const res = await apiClient.client.get<ZortoutMemberSyncJobResponse>(
     `/portal/zortout/members/sync/${jobId}`,
+    mutationConfig,
   );
   return res.data;
 };
