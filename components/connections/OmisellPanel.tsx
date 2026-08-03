@@ -175,16 +175,23 @@ export default function OmisellPanel() {
   return (
     <div className="space-y-6 p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-semibold text-defualt-text">
-              Omisell Integration
-            </h2>
-            <OmisellStatusBadge status={status} />
+        <div className="flex min-w-0 items-start gap-4">
+          <img
+            src="/omisell.jpeg"
+            alt="Omisell"
+            className="size-14 shrink-0 rounded-2xl bg-white object-contain shadow-sm"
+          />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-defualt-text">
+                Omisell Integration
+              </h2>
+              <OmisellStatusBadge status={status} />
+            </div>
+            <p className="mt-1 text-sm text-gray-100">
+              เชื่อมต่อกับ Omisell เพื่อให้คะแนนสมาชิกเมื่อออเดอร์ชำระเงินแล้ว
+            </p>
           </div>
-          <p className="mt-1 text-sm text-gray-100">
-            เชื่อมต่อกับ Omisell เพื่อให้คะแนนสมาชิกเมื่อออเดอร์ชำระเงินแล้ว
-          </p>
         </div>
 
         {isEnabled && !isEditing && (
