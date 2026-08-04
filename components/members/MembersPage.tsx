@@ -159,12 +159,12 @@ export default function MembersPage() {
               type="button"
               disabled={syncAllLoading}
               onClick={() => void handleSyncAll()}
-              className="inline-flex items-center justify-center gap-2 rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
                 className={`size-4 ${syncAllLoading ? "animate-spin" : ""}`}
               />
-              Sync ข้อมูลสมาชิกไป Zortout
+              Sync ข้อมูลไป Zortout
             </button>
           ) : null}
 
