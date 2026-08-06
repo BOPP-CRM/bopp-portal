@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionButton } from "@/components/connections/shared";
+import dialog from "@/components/util/dialog";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import {
   getOpenAiStatus,
@@ -9,9 +10,10 @@ import {
 } from "@/services/openai/openai";
 import type { OpenAiStatus } from "@/services/openai/types";
 import { handleError } from "@/utils/errors";
-import { Info, KeyRound } from "lucide-react";
+import { Info } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import dialog from "@/components/util/dialog";
+
+const OPENAI_LOGO = "/openai.png";
 
 export default function OpenAiPanel() {
   const [isLoading, setIsLoading] = useState(true);
@@ -88,98 +90,144 @@ export default function OpenAiPanel() {
     return <ContentSkeleton />;
   }
 
+  const isConfigured = Boolean(status?.configured);
+
   return (
-    <div className="p-6">
-      <div className="mb-6 flex items-start gap-4">
-        <div className="flex size-12 items-center justify-center rounded-xl bg-emerald-50">
-          <KeyRound className="size-6 text-emerald-700" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold text-defualt-text">OpenAI</h2>
-          <p className="mt-1 text-sm text-gray-100">
-            ใช้ API Key ของท่านเพื่อให้ AI อ่านรูปใบเสร็จและสร้างรายการขาย
-            ข้อมูล API Key จัดเก็บในระบบของ Partner และไม่แสดงให้ผู้อื่นเห็น
-          </p>
-        </div>
-      </div>
-
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {status?.configured && !isEditing ? (
-        <div className="space-y-4">
-          <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm">
-            <p className="text-gray-100">API Key ที่บันทึกไว้</p>
-            <p className="mt-1 font-mono text-defualt-text">
-              {status.masked_key || "sk-..."}
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <img
+            src={OPENAI_LOGO}
+            alt="OpenAI"
+            className="size-14 shrink-0 rounded-2xl bg-white object-contain shadow-sm"
+          />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-defualt-text">
+                OpenAI Integration
+              </h2>
+              <OpenAiStatusBadge status={status} />
+            </div>
+            <p className="mt-1 text-sm text-gray-100">
+              ใช้ API Key ของท่านเพื่อให้ AI อ่านรูปใบเสร็จและสร้างรายการขาย
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+        </div>
+
+        {isConfigured && !isEditing ? (
+          <div className="flex shrink-0 flex-wrap gap-2">
             <ActionButton
-              label="เปลี่ยน API Key"
+              disabled={isSubmitting}
               onClick={() => {
                 setApiKey("");
+                setError(null);
                 setIsEditing(true);
               }}
-              disabled={isSubmitting}
+              label="เปลี่ยน API Key"
+              variant="outlined"
             />
             <ActionButton
-              label="ลบ API Key"
-              onClick={() => void handleRemove()}
               disabled={isSubmitting}
+              onClick={() => void handleRemove()}
+              label={isSubmitting ? "กำลังลบ..." : "ลบ API Key"}
               variant="outlined"
             />
           </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-defualt-text">
-              OpenAI API Key
-            </label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={(event) => setApiKey(event.target.value)}
-              placeholder="sk-..."
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brown-100"
-              autoComplete="off"
-            />
-            <p className="mt-2 text-xs text-gray-100">
-              สร้าง API Key ได้ที่{" "}
-              <a
-                href="https://platform.openai.com/api-keys"
-                target="_blank"
-                rel="noreferrer"
-                className="text-brown-100 underline"
-              >
-                platform.openai.com
-              </a>
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <ActionButton
-              label={status?.configured ? "บันทึก API Key ใหม่" : "บันทึก API Key"}
-              onClick={() => void handleSave()}
-              disabled={isSubmitting}
-            />
-            {status?.configured ? (
-              <ActionButton
-                label="ยกเลิก"
-                onClick={() => {
-                  setApiKey("");
-                  setIsEditing(false);
-                }}
+        ) : null}
+      </div>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-defualt-text">
+          <span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-brown-100 text-xs font-semibold text-white">
+            1
+          </span>
+          ตั้งค่า API Key
+        </h3>
+
+        <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+          {isConfigured && !isEditing ? (
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-defualt-text">
+                API Key ที่บันทึกไว้
+              </p>
+              <code className="block break-all rounded-lg bg-gray-10 px-3 py-2 font-mono text-sm text-defualt-text">
+                {status?.masked_key || "sk-..."}
+              </code>
+            </div>
+          ) : (
+            <>
+              <label className="mb-1.5 block text-sm font-medium text-defualt-text">
+                OpenAI API Key
+                <span className="ml-1 text-xs text-gray-100">(บังคับกรอก)</span>
+              </label>
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(event) => setApiKey(event.target.value)}
+                placeholder="sk-..."
                 disabled={isSubmitting}
-                variant="outlined"
+                autoComplete="off"
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-defualt-text placeholder-gray-100 outline-none transition focus:border-brown-100 focus:ring-1 focus:ring-brown-100 disabled:cursor-not-allowed disabled:bg-gray-10 disabled:opacity-70"
               />
-            ) : null}
-          </div>
+              <p className="mt-2 text-xs text-gray-100">
+                สร้าง API Key ได้ที่{" "}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-brown-100 underline"
+                >
+                  platform.openai.com
+                </a>
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <ActionButton
+                  disabled={isSubmitting}
+                  onClick={() => void handleSave()}
+                  label={
+                    isSubmitting
+                      ? "กำลังบันทึก..."
+                      : isConfigured
+                        ? "บันทึก API Key ใหม่"
+                        : "บันทึก API Key"
+                  }
+                />
+                {isConfigured ? (
+                  <ActionButton
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      setApiKey("");
+                      setError(null);
+                      setIsEditing(false);
+                    }}
+                    label="ยกเลิก"
+                    variant="outlined"
+                  />
+                ) : null}
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </section>
+
+      {error ? <p className="text-sm text-red-100">{error}</p> : null}
     </div>
+  );
+}
+
+function OpenAiStatusBadge({ status }: { status: OpenAiStatus | null }) {
+  if (!status?.configured) {
+    return (
+      <span className="rounded-full bg-gray-10 px-2.5 py-1 text-xs font-medium text-gray-100">
+        ยังไม่ได้ตั้งค่า
+      </span>
+    );
+  }
+
+  return (
+    <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+      ตั้งค่าแล้ว
+    </span>
   );
 }
