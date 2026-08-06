@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
@@ -16,13 +16,117 @@ import {
   UserCog,
   Users,
 } from "lucide-react";
-import MenuItem from "./MenuItem";
+import MenuSection from "./MenuSection";
 import Profile from "./Profile";
 import { useApp } from "@/providers/app-provider";
 import { canAccessPath, getUserRole, isAdmin } from "@/utils/roles";
-import { useMemo } from "react";
 
-const iconClassName = "size-6 shrink-0";
+const iconClassName = "size-4 shrink-0";
+
+type MenuLeaf = {
+  icon: React.ReactNode;
+  label: string;
+  path: string;
+  requiresWarranty?: boolean;
+  requiresAdmin?: boolean;
+};
+
+type MenuGroup = {
+  id: string;
+  label: string;
+  items: MenuLeaf[];
+};
+
+const MENU_GROUPS: MenuGroup[] = [
+  {
+    id: "overview",
+    label: "ภาพรวม",
+    items: [
+      {
+        icon: <LayoutDashboard className={iconClassName} />,
+        label: "แดชบอร์ด",
+        path: "/dashboard",
+      },
+      {
+        icon: <Building2 className={iconClassName} />,
+        label: "ข้อมูล Partner",
+        path: "/dashboard/partner",
+      },
+    ],
+  },
+  {
+    id: "members",
+    label: "สมาชิก",
+    items: [
+      {
+        icon: <Users className={iconClassName} />,
+        label: "รายชื่อสมาชิก",
+        path: "/dashboard/members",
+      },
+      {
+        icon: <BadgeCheck className={iconClassName} />,
+        label: "ระดับสมาชิก",
+        path: "/dashboard/tier",
+      },
+    ],
+  },
+  {
+    id: "rewards",
+    label: "รางวัล",
+    items: [
+      {
+        icon: <Receipt className={iconClassName} />,
+        label: "ตรวจสอบใบเสร็จ",
+        path: "/dashboard/receipts",
+      },
+      {
+        icon: <Ticket className={iconClassName} />,
+        label: "จัดการคูปอง",
+        path: "/dashboard/coupons",
+      },
+      {
+        icon: <QrCode className={iconClassName} />,
+        label: "รางวัล QR Code",
+        path: "/dashboard/redeem-qrcodes",
+      },
+    ],
+  },
+  {
+    id: "warranty",
+    label: "รับประกัน",
+    items: [
+      {
+        icon: <ShieldCheck className={iconClassName} />,
+        label: "รับประกันสินค้า",
+        path: "/dashboard/warranties",
+        requiresWarranty: true,
+      },
+      {
+        icon: <Package className={iconClassName} />,
+        label: "สินค้ารับประกัน",
+        path: "/dashboard/warranties/products",
+        requiresWarranty: true,
+      },
+    ],
+  },
+  {
+    id: "system",
+    label: "ระบบ",
+    items: [
+      {
+        icon: <UserCog className={iconClassName} />,
+        label: "จัดการทีม",
+        path: "/dashboard/team",
+      },
+      {
+        icon: <Plug className={iconClassName} />,
+        label: "การเชื่อมต่อ",
+        path: "/dashboard/connections",
+        requiresAdmin: true,
+      },
+    ],
+  },
+];
 
 export default function Menu() {
   const pathname = usePathname();
@@ -58,87 +162,28 @@ export default function Menu() {
     };
   }, [isMobileOpen]);
 
-  const menuItems = [
-    {
-      icon: <LayoutDashboard className={iconClassName} />,
-      label: "แดชบอร์ด",
-      path: "/dashboard",
-    },
-    {
-      icon: <Building2 className={iconClassName} />,
-      label: "ข้อมูล Partner",
-      path: "/dashboard/partner",
-    },
-    {
-      icon: <Users className={iconClassName} />,
-      label: "รายชื่อสมาชิก",
-      path: "/dashboard/members",
-    },
-    {
-      icon: <Receipt className={iconClassName} />,
-      label: "ตรวจสอบใบเสร็จ",
-      path: "/dashboard/receipts",
-    },
-    {
-      icon: <ShieldCheck className={iconClassName} />,
-      label: "รับประกันสินค้า",
-      path: "/dashboard/warranties",
-      requiresWarranty: true,
-    },
-    {
-      icon: <Package className={iconClassName} />,
-      label: "สินค้ารับประกัน",
-      path: "/dashboard/warranties/products",
-      requiresWarranty: true,
-    },
-    {
-      icon: <BadgeCheck className={iconClassName} />,
-      label: "ระดับสมาชิก",
-      path: "/dashboard/tier",
-    },
-    {
-      icon: <Ticket className={iconClassName} />,
-      label: "จัดการคูปอง",
-      path: "/dashboard/coupons",
-    },
-    {
-      icon: <QrCode className={iconClassName} />,
-      label: "รางวัล QR Code",
-      path: "/dashboard/redeem-qrcodes",
-    },
-    {
-      icon: <UserCog className={iconClassName} />,
-      label: "จัดการทีม",
-      path: "/dashboard/team",
-    },
-    {
-      icon: <Plug className={iconClassName} />,
-      label: "การเชื่อมต่อ",
-      path: "/dashboard/connections",
-      requiresAdmin: true,
-    },
-  ];
-
-  const visibleMenuItems = useMemo(() => {
+  const visibleGroups = useMemo(() => {
     const role = getUserRole(me);
-    return menuItems.filter((item) => {
-      if (
-        "requiresWarranty" in item &&
-        item.requiresWarranty &&
-        !me?.partner.warranty_enabled
-      ) {
-        return false;
-      }
-      if ("requiresAdmin" in item && item.requiresAdmin && !isAdmin(me)) {
-        return false;
-      }
-      return canAccessPath(role, item.path);
-    });
+
+    return MENU_GROUPS.map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (item.requiresWarranty && !me?.partner.warranty_enabled) {
+          return false;
+        }
+        if (item.requiresAdmin && !isAdmin(me)) {
+          return false;
+        }
+        return canAccessPath(role, item.path);
+      }),
+    })).filter((group) => group.items.length > 0);
   }, [me]);
 
   const activePath = useMemo(() => {
-    const matches = visibleMenuItems
-      .map((item) => item.path)
+    const allPaths = visibleGroups.flatMap((group) =>
+      group.items.map((item) => item.path),
+    );
+    const matches = allPaths
       .filter((path) =>
         path === "/dashboard"
           ? pathname === "/dashboard"
@@ -146,7 +191,7 @@ export default function Menu() {
       )
       .sort((a, b) => b.length - a.length);
     return matches[0] ?? null;
-  }, [pathname, visibleMenuItems]);
+  }, [pathname, visibleGroups]);
 
   const handleSidebarToggle = () => {
     if (isMobileOpen) {
@@ -159,63 +204,63 @@ export default function Menu() {
 
   return (
     <>
-      <header className="md:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between px-4 py-3 bg-white shadow-[0_4px_10px_0_rgba(0,0,0,0.1)]">
+      <header className="fixed inset-x-0 top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] md:hidden">
         <button
           type="button"
           onClick={() => setIsMobileOpen(true)}
-          className="size-6 shrink-0 flex items-center justify-center cursor-pointer [&_svg]:shrink-0"
+          className="flex size-6 shrink-0 cursor-pointer items-center justify-center [&_svg]:shrink-0"
           aria-label="เปิดเมนู"
         >
-          <MenuIcon className="text-gray-100 size-6" />
+          <MenuIcon className="size-5 text-gray-100" />
         </button>
         <Profile />
       </header>
 
       <div
-        className={`md:hidden fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 ease-in-out${isMobileOpen ? " opacity-100" : " opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-40 bg-black/30 transition-opacity duration-300 ease-in-out md:hidden${isMobileOpen ? " opacity-100" : " pointer-events-none opacity-0"}`}
         onClick={() => setIsMobileOpen(false)}
         aria-hidden={!isMobileOpen}
       />
 
       <div
-        className={`bg-white min-h-screen overflow-y-auto shrink-0 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-50 w-66 -translate-x-full md:relative md:h-full md:translate-x-0 md:transition-[width]${isMobileOpen ? " translate-x-0" : ""}${isCollapsed ? " md:w-20" : " md:w-66"}`}
+        className={`fixed inset-y-0 left-0 z-50 min-h-screen w-66 shrink-0 overflow-y-auto bg-white shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out -translate-x-full md:relative md:h-full md:translate-x-0 md:transition-[width]${isMobileOpen ? " translate-x-0" : ""}${isCollapsed ? " md:w-16" : " md:w-60"}`}
       >
         <div
-          className={`flex items-center gap-2 transition-all duration-300 ease-in-out justify-between p-6 pb-7${isCollapsed ? " md:flex-col md:justify-center md:px-4 md:py-6 md:gap-4" : ""}`}
+          className={`flex items-center justify-between gap-2 p-4 pb-5 transition-all duration-300 ease-in-out${isCollapsed ? " md:flex-col md:justify-center md:gap-3 md:px-2 md:py-4" : ""}`}
         >
           {me?.partner.logo_url && (
             <img
               src="/logo.png"
               alt="logo"
-              className={`size-20 shrink-0 object-contain ${isCollapsed ? "md:hidden" : ""}`}
+              className={`size-14 shrink-0 cursor-pointer object-contain${isCollapsed ? " md:hidden" : ""}`}
               onClick={() => window.location.assign("/")}
             />
           )}
           <button
             type="button"
             onClick={handleSidebarToggle}
-            className="size-6 shrink-0 flex items-center justify-center cursor-pointer [&_svg]:shrink-0"
+            className="flex size-6 shrink-0 cursor-pointer items-center justify-center [&_svg]:shrink-0"
             aria-label={
               isMobileOpen ? "ปิดเมนู" : isCollapsed ? "ขยายเมนู" : "หุบเมนู"
             }
           >
-            <MenuIcon className="text-gray-100 size-6" />
+            <MenuIcon className="size-5 text-gray-100" />
           </button>
         </div>
 
-        <div>
-          {visibleMenuItems.map((item) => (
-            <MenuItem
-              key={item.path}
-              path={item.path}
-              icon={item.icon}
-              label={item.label}
-              isActive={item.path === activePath}
+        <nav className="px-1 pb-6">
+          {visibleGroups.map((group) => (
+            <MenuSection
+              key={group.id}
+              label={group.label}
+              items={group.items}
+              activePath={activePath}
               isCollapsed={isCollapsed}
-              onClick={() => setIsMobileOpen(false)}
+              defaultOpen
+              onItemClick={() => setIsMobileOpen(false)}
             />
           ))}
-        </div>
+        </nav>
       </div>
     </>
   );
