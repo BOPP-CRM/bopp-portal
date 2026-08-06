@@ -270,7 +270,7 @@ export default function SalesPage() {
                   className="size-4 shrink-0 object-contain"
                 />
               )}
-              Sync จากใบเสร็จ (AI)
+              Sync จากใบเสร็จ
               {receiptMissingCount > 0
                 ? ` (${formatNumber(receiptMissingCount)})`
                 : ""}
@@ -326,7 +326,7 @@ export default function SalesPage() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm font-medium text-defualt-text">
-                Sync ใบเสร็จไปรายการขาย (AI)
+                Sync ใบเสร็จไปรายการขาย
               </p>
               <p className="mt-1 text-sm text-gray-100">
                 กำลัง sync... {formatNumber(receiptSyncJob.processed)} /{" "}
