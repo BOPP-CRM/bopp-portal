@@ -1,5 +1,5 @@
 export type SaleStatus = "paid" | "void";
-export type SaleSource = "zortout" | "omisell" | "manual" | "other";
+export type SaleSource = "zortout" | "omisell" | "receipt" | "manual" | "other";
 
 export type SaleMember = {
   id: number;
@@ -44,6 +44,9 @@ export type PortalSale = {
   customer_email: string | false;
   last_sync_at: string | false;
   receipt_redeem_id: number | false;
+  ai_generated: boolean;
+  ai_generated_at: string | false;
+  can_regenerate_ai: boolean;
   user: SaleMember | false;
   lines?: SaleLine[];
 };
@@ -69,6 +72,7 @@ export type SaleDetailResponse = {
 export const SALE_SOURCE_LABELS: Record<SaleSource, string> = {
   zortout: "Zortout",
   omisell: "Omisell",
+  receipt: "ใบเสร็จ (AI)",
   manual: "Manual",
   other: "Other",
 };
@@ -107,6 +111,34 @@ export type ZortoutSaleSyncJobResponse = {
   message?: string;
 };
 
+export type ReceiptSaleSyncJob = {
+  id: number;
+  state: "pending" | "running" | "done" | "failed";
+  total: number;
+  processed: number;
+  synced: number;
+  skipped: number;
+  failed: number;
+  last_error: string | false;
+  started_at: string | false;
+  finished_at: string | false;
+  current_receipt: {
+    id: number;
+    receipt_number: string;
+  } | false;
+};
+
+export type ReceiptSaleSyncStatusResponse = {
+  missing_count: number;
+  openai_configured: boolean;
+  active_job: ReceiptSaleSyncJob | false;
+};
+
+export type ReceiptSaleSyncJobResponse = {
+  job: ReceiptSaleSyncJob;
+  message?: string;
+};
+
 export const SALE_SOURCE_STYLES: Record<
   SaleSource,
   { badge: string; dot: string }
@@ -118,6 +150,10 @@ export const SALE_SOURCE_STYLES: Record<
   omisell: {
     badge: "bg-blue-50 text-blue-700 border-blue-200",
     dot: "bg-blue-500",
+  },
+  receipt: {
+    badge: "bg-violet-50 text-violet-700 border-violet-200",
+    dot: "bg-violet-500",
   },
   manual: {
     badge: "bg-purple-50 text-purple-700 border-purple-200",

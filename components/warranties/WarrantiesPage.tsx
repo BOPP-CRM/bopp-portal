@@ -2,6 +2,7 @@
 
 import StatusBadge from "@/components/warranties/StatusBadge";
 import WarrantyDetailModal from "@/components/warranties/WarrantyDetailModal";
+import MemberAvatar from "@/components/members/MemberAvatar";
 import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
@@ -300,17 +301,11 @@ export default function WarrantiesPage() {
 function MemberCell({ user }: { user: PortalWarranty["user"] }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      {user.picture_url ? (
-        <img
-          src={String(user.picture_url)}
-          alt={user.display_name}
-          className="size-9 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brown-100 text-xs font-medium text-white">
-          {user.display_name.charAt(0)}
-        </div>
-      )}
+      <MemberAvatar
+        name={user.display_name}
+        pictureUrl={user.picture_url}
+        size="xs"
+      />
       <div className="min-w-0">
         <Link
           href={`/dashboard/members/${user.id}`}

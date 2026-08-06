@@ -6,6 +6,8 @@ import type {
   SalesListResponse,
   ZortoutSaleSyncJobResponse,
   ZortoutSaleSyncStatusResponse,
+  ReceiptSaleSyncJobResponse,
+  ReceiptSaleSyncStatusResponse,
 } from "./types";
 
 const mutationConfig = { skipErrorAlert: true };
@@ -70,4 +72,49 @@ export const getZortoutSaleSyncJob = async (jobId: number) => {
   return res.data;
 };
 
-export type { PortalSale, SaleLine, SaleSource, SaleStatus, ZortoutSaleSyncJob } from "./types";
+export const getReceiptSaleSyncStatus = async () => {
+  const res = await apiClient.client.get<ReceiptSaleSyncStatusResponse>(
+    "/portal/sales/sync-receipts/status",
+    mutationConfig,
+  );
+  return res.data;
+};
+
+export const startReceiptSaleSync = async (aiConfirmed = true) => {
+  const res = await apiClient.client.post<ReceiptSaleSyncJobResponse>(
+    "/portal/sales/sync-receipts",
+    { ai_confirmed: aiConfirmed },
+    mutationConfig,
+  );
+  return res.data;
+};
+
+export const getActiveReceiptSaleSyncJob = async () => {
+  try {
+    const res = await apiClient.client.get<{
+      job: ReceiptSaleSyncStatusResponse["active_job"];
+    }>("/portal/sales/sync-receipts/active", mutationConfig);
+    return res.data;
+  } catch {
+    return { job: false as const };
+  }
+};
+
+export const getReceiptSaleSyncJob = async (jobId: number) => {
+  const res = await apiClient.client.get<ReceiptSaleSyncJobResponse>(
+    `/portal/sales/sync-receipts/${jobId}`,
+    mutationConfig,
+  );
+  return res.data;
+};
+
+export const regenerateSaleWithAi = async (saleId: number, aiConfirmed = true) => {
+  const res = await apiClient.client.post<SaleDetailResponse & { message?: string }>(
+    `/portal/sales/${saleId}/regenerate-ai`,
+    { ai_confirmed: aiConfirmed },
+    mutationConfig,
+  );
+  return res.data;
+};
+
+export type { PortalSale, SaleLine, SaleSource, SaleStatus, ZortoutSaleSyncJob, ReceiptSaleSyncJob } from "./types";

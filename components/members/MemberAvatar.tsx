@@ -5,10 +5,11 @@ import { useState } from "react";
 type MemberAvatarProps = {
   name: string;
   pictureUrl?: string | false | null;
-  size?: "sm" | "md" | "lg";
+  size?: "xs" | "sm" | "md" | "lg";
 };
 
 const SIZE_CLASS = {
+  xs: "size-9 text-xs",
   sm: "size-10 text-xs",
   md: "size-14 text-lg",
   lg: "size-16 text-lg",

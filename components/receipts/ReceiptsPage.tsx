@@ -3,14 +3,28 @@
 import ReceiptDetailModal, {
   StateBadge,
 } from "@/components/receipts/ReceiptDetailModal";
+import AiSyncConfirmDialog, {
+  useAiSyncGate,
+} from "@/components/sales/AiSyncConfirmDialog";
+import {
+  getReceiptSaleSyncProgress,
+  useReceiptSaleSyncJob,
+} from "@/components/sales/useReceiptSaleSyncJob";
+import MemberAvatar from "@/components/members/MemberAvatar";
 import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
+import { useApp } from "@/providers/app-provider";
 import { getReceipts } from "@/services/receipts/receipts";
 import type { PortalReceipt, ReceiptState } from "@/services/receipts/types";
+import {
+  getReceiptSaleSyncStatus,
+  startReceiptSaleSync,
+} from "@/services/sales/sales";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
-import { ChevronLeft, ChevronRight, Eye, Plus, Search } from "lucide-react";
+import { isAdmin } from "@/utils/roles";
+import { ChevronLeft, ChevronRight, Eye, Plus, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -19,6 +33,7 @@ const PAGE_SIZE = 20;
 type StateFilter = ReceiptState | "all";
 
 export default function ReceiptsPage() {
+  const { me } = useApp();
   const [receipts, setReceipts] = useState<PortalReceipt[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -31,6 +46,13 @@ export default function ReceiptsPage() {
   const [selectedReceiptId, setSelectedReceiptId] = useState<number | null>(
     null,
   );
+  const [receiptMissingCount, setReceiptMissingCount] = useState(0);
+  const [openAiConfigured, setOpenAiConfigured] = useState<boolean | null>(null);
+  const [showReceiptAiConfirm, setShowReceiptAiConfirm] = useState(false);
+  const [isStartingReceiptSync, setIsStartingReceiptSync] = useState(false);
+
+  const canSyncSales = isAdmin(me);
+  const { requireOpenAiConfigured } = useAiSyncGate(openAiConfigured);
 
   const stateParam = useMemo(
     () => (stateFilter === "all" ? undefined : stateFilter),
@@ -59,9 +81,38 @@ export default function ReceiptsPage() {
     }
   }, [offset, search, stateParam]);
 
+  const loadReceiptSyncStatus = useCallback(async () => {
+    if (!canSyncSales) return;
+    try {
+      const status = await getReceiptSaleSyncStatus();
+      setReceiptMissingCount(status.missing_count);
+      setOpenAiConfigured(status.openai_configured);
+    } catch {
+      setReceiptMissingCount(0);
+      setOpenAiConfigured(false);
+    }
+  }, [canSyncSales]);
+
+  const handleReceiptSyncComplete = useCallback(async () => {
+    setSuccessMessage("Sync ใบเสร็จไปรายการขายด้วย AI เสร็จแล้ว");
+    await Promise.all([loadReceipts(), loadReceiptSyncStatus()]);
+    setTimeout(() => setSuccessMessage(null), 4000);
+  }, [loadReceipts, loadReceiptSyncStatus]);
+
+  const {
+    job: receiptSyncJob,
+    isActive: isReceiptSyncActive,
+    setJob: setReceiptSyncJob,
+    refreshJob: refreshReceiptSyncJob,
+  } = useReceiptSaleSyncJob(handleReceiptSyncComplete);
+
   useEffect(() => {
     void loadReceipts();
   }, [loadReceipts]);
+
+  useEffect(() => {
+    void loadReceiptSyncStatus();
+  }, [loadReceiptSyncStatus]);
 
   useEffect(() => {
     setOffset(0);
@@ -82,6 +133,32 @@ export default function ReceiptsPage() {
     await loadReceipts();
     setTimeout(() => setSuccessMessage(null), 3000);
   };
+
+  const handleStartReceiptSync = async () => {
+    setIsStartingReceiptSync(true);
+    setError(null);
+    try {
+      const response = await startReceiptSaleSync(true);
+      setReceiptSyncJob(response.job);
+      await refreshReceiptSyncJob(response.job.id);
+      setShowReceiptAiConfirm(false);
+    } catch (startError) {
+      setError(handleError(startError).message);
+    } finally {
+      setIsStartingReceiptSync(false);
+    }
+  };
+
+  const handleRequestReceiptSync = () => {
+    requireOpenAiConfigured(() => {
+      if (receiptMissingCount <= 0) return;
+      setShowReceiptAiConfirm(true);
+    });
+  };
+
+  const receiptSyncProgress = receiptSyncJob
+    ? getReceiptSaleSyncProgress(receiptSyncJob)
+    : 0;
 
   const stateTabs: { value: StateFilter; label: string }[] = [
     { value: "pending", label: "รอตรวจสอบ" },
@@ -121,8 +198,44 @@ export default function ReceiptsPage() {
             <Plus className="size-4" />
             เพิ่มใบเสร็จ
           </Link>
+
+          {canSyncSales && stateFilter === "approved" ? (
+            <button
+              type="button"
+              onClick={handleRequestReceiptSync}
+              disabled={
+                isStartingReceiptSync ||
+                isReceiptSyncActive ||
+                receiptMissingCount <= 0
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text hover:bg-gray-10 disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`size-4${isStartingReceiptSync || isReceiptSyncActive ? " animate-spin" : ""}`}
+              />
+              Sync รายการขาย (AI)
+              {receiptMissingCount > 0 ? ` (${receiptMissingCount})` : ""}
+            </button>
+          ) : null}
         </div>
       </div>
+
+      {canSyncSales &&
+      stateFilter === "approved" &&
+      receiptMissingCount > 0 &&
+      !isReceiptSyncActive ? (
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+          มีใบเสร็จที่อนุมัติแล้ว {receiptMissingCount} รายการ
+          ที่ยังไม่ได้ sync เป็นรายการขาย
+        </div>
+      ) : null}
+
+      {isReceiptSyncActive && receiptSyncJob ? (
+        <div className="mb-4 rounded-2xl border border-brown-yellow-20 bg-brown-yellow-5 px-4 py-4 text-sm text-brown-100">
+          กำลัง sync ใบเสร็จด้วย AI... {receiptSyncJob.processed}/
+          {receiptSyncJob.total} ({receiptSyncProgress}%)
+        </div>
+      ) : null}
 
       {successMessage ? (
         <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
@@ -275,6 +388,14 @@ export default function ReceiptsPage() {
           onSuccess={handleSuccess}
         />
       ) : null}
+
+      <AiSyncConfirmDialog
+        open={showReceiptAiConfirm}
+        onClose={() => setShowReceiptAiConfirm(false)}
+        onConfirm={() => void handleStartReceiptSync()}
+        loading={isStartingReceiptSync}
+        confirmText="เริ่ม Sync"
+      />
     </div>
   );
 }
@@ -282,17 +403,11 @@ export default function ReceiptsPage() {
 function MemberCell({ user }: { user: PortalReceipt["user"] }) {
   return (
     <div className="flex min-w-0 items-center gap-3">
-      {user.picture_url ? (
-        <img
-          src={String(user.picture_url)}
-          alt={user.display_name}
-          className="size-9 shrink-0 rounded-full object-cover"
-        />
-      ) : (
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brown-100 text-xs font-medium text-white">
-          {user.display_name.charAt(0)}
-        </div>
-      )}
+      <MemberAvatar
+        name={user.display_name}
+        pictureUrl={user.picture_url}
+        size="xs"
+      />
       <div className="min-w-0">
         <Link
           href={`/dashboard/members/${user.id}`}

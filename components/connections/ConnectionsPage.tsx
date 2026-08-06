@@ -1,33 +1,49 @@
 "use client";
 
 import BoppMcpPanel from "@/components/connections/BoppMcpPanel";
+import OpenAiPanel from "@/components/connections/OpenAiPanel";
 import ZortoutPanel from "@/components/connections/ZortoutPanel";
 import OmisellPanel from "./OmisellPanel";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type Tab = "bopp-mcp" | "zortout" | "omisell";
+type Tab = "bopp-mcp" | "zortout" | "omisell" | "openai";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "bopp-mcp", label: "BOPP MCP" },
   { id: "zortout", label: "Zortout" },
   { id: "omisell", label: "Omisell" },
+  { id: "openai", label: "OpenAI" },
 ];
 
 const CONNECTIONS_TAB_KEY = "connections_tab";
 
 function isTab(value: string | null): value is Tab {
-  return value === "bopp-mcp" || value === "zortout" || value === "omisell";
+  return (
+    value === "bopp-mcp" ||
+    value === "zortout" ||
+    value === "omisell" ||
+    value === "openai"
+  );
 }
 
 export default function ConnectionsPage() {
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("bopp-mcp");
 
   useEffect(() => {
+    const queryTab = searchParams.get("tab");
+    if (isTab(queryTab)) {
+      setTab(queryTab);
+      window.localStorage.setItem(CONNECTIONS_TAB_KEY, queryTab);
+      return;
+    }
+
     const saved = window.localStorage.getItem(CONNECTIONS_TAB_KEY);
     if (isTab(saved)) {
       setTab(saved);
     }
-  }, []);
+  }, [searchParams]);
 
   const selectTab = (id: Tab) => {
     setTab(id);
@@ -66,6 +82,7 @@ export default function ConnectionsPage() {
         {tab === "bopp-mcp" ? <BoppMcpPanel /> : null}
         {tab === "zortout" ? <ZortoutPanel /> : null}
         {tab === "omisell" ? <OmisellPanel /> : null}
+        {tab === "openai" ? <OpenAiPanel /> : null}
       </div>
     </div>
   );

@@ -1,8 +1,15 @@
 "use client";
 
+import AiSyncConfirmDialog, {
+  useAiSyncGate,
+} from "@/components/sales/AiSyncConfirmDialog";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import SaleDetailModal, { StatusBadge } from "@/components/sales/SaleDetailModal";
 import SourceBadge from "@/components/sales/SourceBadge";
+import {
+  getReceiptSaleSyncProgress,
+  useReceiptSaleSyncJob,
+} from "@/components/sales/useReceiptSaleSyncJob";
 import {
   getZortoutSaleSyncProgress,
   useZortoutSaleSyncJob,
@@ -12,7 +19,9 @@ import { TableSkeleton } from "@/components/util/Skeleton";
 import { useApp } from "@/providers/app-provider";
 import {
   getSales,
+  getReceiptSaleSyncStatus,
   getZortoutSaleSyncStatus,
+  startReceiptSaleSync,
   startZortoutSaleSync,
 } from "@/services/sales/sales";
 import type {
@@ -53,11 +62,16 @@ export default function SalesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
   const [missingCount, setMissingCount] = useState(0);
+  const [receiptMissingCount, setReceiptMissingCount] = useState(0);
   const [zortoutConfigured, setZortoutConfigured] = useState(false);
+  const [openAiConfigured, setOpenAiConfigured] = useState<boolean | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [isStartingSync, setIsStartingSync] = useState(false);
+  const [isStartingReceiptSync, setIsStartingReceiptSync] = useState(false);
+  const [showReceiptAiConfirm, setShowReceiptAiConfirm] = useState(false);
 
   const canSync = isAdmin(me);
+  const { requireOpenAiConfigured } = useAiSyncGate(openAiConfigured);
 
   const statusParam = useMemo(
     () => (statusFilter === "all" ? undefined : statusFilter),
@@ -72,12 +86,19 @@ export default function SalesPage() {
     if (!canSync) return;
 
     try {
-      const status = await getZortoutSaleSyncStatus();
-      setMissingCount(status.missing_count);
-      setZortoutConfigured(status.zortout_configured);
+      const [zortoutStatus, receiptStatus] = await Promise.all([
+        getZortoutSaleSyncStatus(),
+        getReceiptSaleSyncStatus(),
+      ]);
+      setMissingCount(zortoutStatus.missing_count);
+      setZortoutConfigured(zortoutStatus.zortout_configured);
+      setReceiptMissingCount(receiptStatus.missing_count);
+      setOpenAiConfigured(receiptStatus.openai_configured);
     } catch {
       setMissingCount(0);
       setZortoutConfigured(false);
+      setReceiptMissingCount(0);
+      setOpenAiConfigured(false);
     }
   }, [canSync]);
 
@@ -110,6 +131,12 @@ export default function SalesPage() {
     setTimeout(() => setSyncMessage(null), 4000);
   }, [loadSales, loadSyncStatus]);
 
+  const handleReceiptSyncComplete = useCallback(async () => {
+    await Promise.all([loadSales(), loadSyncStatus()]);
+    setSyncMessage("Sync ใบเสร็จไปรายการขายด้วย AI เสร็จแล้ว");
+    setTimeout(() => setSyncMessage(null), 4000);
+  }, [loadSales, loadSyncStatus]);
+
   const {
     job: syncJob,
     isActive: isSyncActive,
@@ -117,6 +144,14 @@ export default function SalesPage() {
     setJob: setSyncJob,
     refreshJob: refreshSyncJob,
   } = useZortoutSaleSyncJob(handleSyncComplete);
+
+  const {
+    job: receiptSyncJob,
+    isActive: isReceiptSyncActive,
+    error: receiptSyncJobError,
+    setJob: setReceiptSyncJob,
+    refreshJob: refreshReceiptSyncJob,
+  } = useReceiptSaleSyncJob(handleReceiptSyncComplete);
 
   useEffect(() => {
     void loadSales();
@@ -156,6 +191,30 @@ export default function SalesPage() {
     }
   };
 
+  const handleStartReceiptSync = async () => {
+    setIsStartingReceiptSync(true);
+    setError(null);
+    setSyncMessage(null);
+
+    try {
+      const response = await startReceiptSaleSync(true);
+      setReceiptSyncJob(response.job);
+      await refreshReceiptSyncJob(response.job.id);
+      setShowReceiptAiConfirm(false);
+    } catch (startError) {
+      setError(handleError(startError).message);
+    } finally {
+      setIsStartingReceiptSync(false);
+    }
+  };
+
+  const handleRequestReceiptSync = () => {
+    requireOpenAiConfigured(() => {
+      if (receiptMissingCount <= 0) return;
+      setShowReceiptAiConfirm(true);
+    });
+  };
+
   const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: "paid", label: "ชำระแล้ว" },
     { value: "void", label: "ยกเลิก" },
@@ -165,13 +224,18 @@ export default function SalesPage() {
   const sourceTabs: { value: SourceFilter; label: string }[] = [
     { value: "all", label: "ทุกแหล่งที่มา" },
     { value: "zortout", label: "Zortout" },
+    { value: "receipt", label: "ใบเสร็จ (AI)" },
     { value: "omisell", label: "Omisell" },
     { value: "manual", label: "Manual" },
     { value: "other", label: "Other" },
   ];
 
   const syncProgress = syncJob ? getZortoutSaleSyncProgress(syncJob) : 0;
+  const receiptSyncProgress = receiptSyncJob
+    ? getReceiptSaleSyncProgress(receiptSyncJob)
+    : 0;
   const showSyncButton = canSync && zortoutConfigured;
+  const showReceiptSyncButton = canSync;
 
   return (
     <div className="p-4 md:p-8">
@@ -186,6 +250,27 @@ export default function SalesPage() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {showReceiptSyncButton ? (
+            <button
+              type="button"
+              onClick={handleRequestReceiptSync}
+              disabled={
+                isStartingReceiptSync ||
+                isReceiptSyncActive ||
+                receiptMissingCount <= 0
+              }
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`size-4${isStartingReceiptSync || isReceiptSyncActive ? " animate-spin" : ""}`}
+              />
+              Sync จากใบเสร็จ (AI)
+              {receiptMissingCount > 0
+                ? ` (${formatNumber(receiptMissingCount)})`
+                : ""}
+            </button>
+          ) : null}
+
           {showSyncButton ? (
             <button
               type="button"
@@ -214,10 +299,62 @@ export default function SalesPage() {
         </div>
       </div>
 
+      {showReceiptSyncButton &&
+      receiptMissingCount > 0 &&
+      !isReceiptSyncActive ? (
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+          มีใบเสร็จที่อนุมัติแล้ว {formatNumber(receiptMissingCount)} รายการ
+          ที่ยังไม่ได้ sync เป็นรายการขาย
+        </div>
+      ) : null}
+
       {showSyncButton && missingCount > 0 && !isSyncActive ? (
         <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
           มีออเดอร์ Zortout ที่ชำระแล้ว {formatNumber(missingCount)} รายการ
           ที่ยังไม่ได้ sync เป็นรายการขาย
+        </div>
+      ) : null}
+
+      {isReceiptSyncActive && receiptSyncJob ? (
+        <div className="mb-4 rounded-2xl border border-brown-yellow-20 bg-brown-yellow-5 px-4 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-defualt-text">
+                Sync ใบเสร็จไปรายการขาย (AI)
+              </p>
+              <p className="mt-1 text-sm text-gray-100">
+                กำลัง sync... {formatNumber(receiptSyncJob.processed)} /{" "}
+                {formatNumber(receiptSyncJob.total)}
+              </p>
+            </div>
+            <Loader2 className="size-5 shrink-0 animate-spin text-brown-100" />
+          </div>
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between text-xs text-gray-100">
+              <span>
+                สำเร็จ {formatNumber(receiptSyncJob.synced)} · ข้าม{" "}
+                {formatNumber(receiptSyncJob.skipped)} · ล้มเหลว{" "}
+                {formatNumber(receiptSyncJob.failed)}
+              </span>
+              <span>{receiptSyncProgress}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-brown-100 transition-all duration-300"
+                style={{ width: `${receiptSyncProgress}%` }}
+              />
+            </div>
+          </div>
+          {receiptSyncJob.current_receipt ? (
+            <p className="mt-3 text-xs text-gray-100">
+              กำลังอ่านใบเสร็จ {receiptSyncJob.current_receipt.receipt_number}
+            </p>
+          ) : null}
+          {receiptSyncJob.last_error ? (
+            <p className="mt-3 text-xs text-red-100">
+              {receiptSyncJob.last_error}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -307,9 +444,9 @@ export default function SalesPage() {
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
           <TableSkeleton rows={6} columns={8} />
-        ) : error || syncJobError ? (
+        ) : error || syncJobError || receiptSyncJobError ? (
           <div className="p-6 text-sm text-red-100">
-            {error || syncJobError}
+            {error || syncJobError || receiptSyncJobError}
           </div>
         ) : sales.length === 0 ? (
           <div className="p-6 text-sm text-gray-100">ไม่พบรายการขาย</div>
@@ -433,9 +570,19 @@ export default function SalesPage() {
       {selectedSaleId ? (
         <SaleDetailModal
           saleId={selectedSaleId}
+          openAiConfigured={openAiConfigured}
           onClose={() => setSelectedSaleId(null)}
+          onUpdated={() => void loadSales()}
         />
       ) : null}
+
+      <AiSyncConfirmDialog
+        open={showReceiptAiConfirm}
+        onClose={() => setShowReceiptAiConfirm(false)}
+        onConfirm={() => void handleStartReceiptSync()}
+        loading={isStartingReceiptSync}
+        confirmText="เริ่ม Sync"
+      />
     </div>
   );
 }

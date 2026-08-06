@@ -1,14 +1,21 @@
 "use client";
 
+import AiSyncConfirmDialog, {
+  useAiSyncGate,
+} from "@/components/sales/AiSyncConfirmDialog";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import SourceBadge from "@/components/sales/SourceBadge";
 import { ModalDetailSkeleton } from "@/components/util/Skeleton";
-import { getSale, type PortalSale } from "@/services/sales/sales";
+import {
+  AI_SALE_REGENERATE_DESCRIPTION,
+  AI_SALE_REGENERATE_TITLE,
+} from "@/services/openai/types";
+import { getSale, regenerateSaleWithAi, type PortalSale } from "@/services/sales/sales";
 import { SALE_STATUS_LABELS, type SaleStatus } from "@/services/sales/types";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
-import { X } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -16,7 +23,9 @@ const MODAL_EXIT_MS = 250;
 
 type SaleDetailModalProps = {
   saleId: number;
+  openAiConfigured?: boolean | null;
   onClose: () => void;
+  onUpdated?: () => void;
 };
 
 export function StatusBadge({
@@ -42,34 +51,58 @@ export function StatusBadge({
 
 export default function SaleDetailModal({
   saleId,
+  openAiConfigured = null,
   onClose,
+  onUpdated,
 }: SaleDetailModalProps) {
   const [sale, setSale] = useState<PortalSale | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const { requireOpenAiConfigured } = useAiSyncGate(openAiConfigured);
+
+  const loadSale = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getSale(saleId);
+      setSale(data);
+    } catch (loadError) {
+      setError(handleError(loadError).message);
+      setSale(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadSale = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await getSale(saleId);
-        setSale(data);
-      } catch (loadError) {
-        setError(handleError(loadError).message);
-        setSale(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     void loadSale();
   }, [saleId]);
 
   const handleClose = () => {
     setIsClosing(true);
     setTimeout(onClose, MODAL_EXIT_MS);
+  };
+
+  const handleRequestRegenerate = () => {
+    requireOpenAiConfigured(() => setShowRegenerateConfirm(true));
+  };
+
+  const handleRegenerate = async () => {
+    setIsRegenerating(true);
+    setError(null);
+    try {
+      const response = await regenerateSaleWithAi(saleId, true);
+      setSale(response.sale);
+      setShowRegenerateConfirm(false);
+      onUpdated?.();
+    } catch (regenerateError) {
+      setError(handleError(regenerateError).message);
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   useEffect(() => {
@@ -86,6 +119,7 @@ export default function SaleDetailModal({
   }, []);
 
   return (
+    <>
     <div
       className={`fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 md:items-center md:p-4${
         isClosing ? " animate-fade-out" : " animate-fade-in"
@@ -131,7 +165,33 @@ export default function SaleDetailModal({
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={sale.status} />
                 <SourceBadge source={sale.source} label={sale.source_label} />
+                {sale.ai_generated ? (
+                  <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700">
+                    AI
+                  </span>
+                ) : null}
               </div>
+
+              {sale.can_regenerate_ai ? (
+                <div>
+                  <button
+                    type="button"
+                    onClick={handleRequestRegenerate}
+                    disabled={isRegenerating}
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-defualt-text hover:bg-gray-10 disabled:opacity-50"
+                  >
+                    <RefreshCw
+                      className={`size-4${isRegenerating ? " animate-spin" : ""}`}
+                    />
+                    สร้างข้อมูลจาก AI ใหม่
+                  </button>
+                  {sale.ai_generated_at ? (
+                    <p className="mt-2 text-xs text-gray-100">
+                      สร้างด้วย AI ล่าสุด: {formatDateTime(sale.ai_generated_at)}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
 
               <Section title="ข้อมูลออเดอร์">
                 <dl className="grid gap-4 text-sm md:grid-cols-2">
@@ -283,6 +343,17 @@ export default function SaleDetailModal({
         </div>
       </div>
     </div>
+
+    <AiSyncConfirmDialog
+      open={showRegenerateConfirm}
+      title={AI_SALE_REGENERATE_TITLE}
+      description={AI_SALE_REGENERATE_DESCRIPTION}
+      onClose={() => setShowRegenerateConfirm(false)}
+      onConfirm={() => void handleRegenerate()}
+      loading={isRegenerating}
+      confirmText="สร้างใหม่"
+    />
+    </>
   );
 }
 
