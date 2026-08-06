@@ -172,7 +172,7 @@ export default function SalesPage() {
             รายการขาย
           </h1>
           <p className="mt-1 text-sm text-gray-100">
-            รายการขายที่ชำระแล้วจาก Zortout และแหล่งอื่น ๆ
+            รายการขายที่ชำระ
           </p>
         </div>
 
