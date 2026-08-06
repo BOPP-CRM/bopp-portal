@@ -85,7 +85,7 @@ export default function OpenAiPanel() {
   };
 
   if (isLoading) {
-    return <ContentSkeleton rows={4} />;
+    return <ContentSkeleton />;
   }
 
   return (
