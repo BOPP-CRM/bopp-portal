@@ -227,7 +227,7 @@ function InfoItem({
     <div>
       <p className="text-xs text-gray-100">{label}</p>
       <p className="mt-0.5 text-sm font-medium text-defualt-text">
-        {displayValue(value)}
+        {displayValue(typeof value === "number" ? String(value) : value)}
       </p>
     </div>
   );
