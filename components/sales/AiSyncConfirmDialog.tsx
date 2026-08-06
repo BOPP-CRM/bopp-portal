@@ -7,6 +7,8 @@ import {
 } from "@/services/openai/types";
 import { useEffect, useState } from "react";
 
+const OPENAI_LOGO = "/openai.png";
+
 type AiSyncConfirmDialogProps = {
   open: boolean;
   title?: string;
@@ -44,17 +46,35 @@ export default function AiSyncConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-gray-300/50 p-4 animate-dialog-backdrop-in"
+      onClick={loading ? undefined : onClose}
+      role="presentation"
     >
       <div
-        className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-sync-confirm-title"
+        className="w-full max-w-lg rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] animate-dialog-pop-in"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold text-defualt-text">{title}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-gray-100">{description}</p>
+        <div className="flex flex-col items-center text-center">
+          <img
+            src={OPENAI_LOGO}
+            alt="OpenAI"
+            className="size-14 shrink-0 rounded-2xl bg-white object-contain shadow-sm"
+          />
+          <h2
+            id="ai-sync-confirm-title"
+            className="mt-4 text-xl font-bold text-defualt-text"
+          >
+            {title}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-100">
+            {description}
+          </p>
+        </div>
 
-        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50/80 p-4">
+        <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-10 p-4 text-left">
           <input
             type="checkbox"
             checked={confirmed}
@@ -66,12 +86,12 @@ export default function AiSyncConfirmDialog({
           </span>
         </label>
 
-        <div className="mt-6 flex justify-end gap-3">
+        <div className="mt-6 flex gap-3">
           <button
             type="button"
             onClick={onClose}
             disabled={loading}
-            className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-100 hover:bg-gray-50 disabled:opacity-50"
+            className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {cancelText}
           </button>
@@ -79,7 +99,7 @@ export default function AiSyncConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={!confirmed || loading}
-            className="rounded-xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white hover:bg-brown-100/90 disabled:opacity-50"
+            className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? "กำลังดำเนินการ..." : confirmText}
           </button>

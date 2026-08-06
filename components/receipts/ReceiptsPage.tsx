@@ -213,7 +213,7 @@ export default function ReceiptsPage() {
               <RefreshCw
                 className={`size-4${isStartingReceiptSync || isReceiptSyncActive ? " animate-spin" : ""}`}
               />
-              Sync รายการขาย (AI)
+              Sync รายการขาย
               {receiptMissingCount > 0 ? ` (${receiptMissingCount})` : ""}
             </button>
           ) : null}

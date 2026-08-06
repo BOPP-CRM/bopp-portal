@@ -72,7 +72,7 @@ export type SaleDetailResponse = {
 export const SALE_SOURCE_LABELS: Record<SaleSource, string> = {
   zortout: "Zortout",
   omisell: "Omisell",
-  receipt: "ใบเสร็จ (AI)",
+  receipt: "ใบเสร็จ",
   manual: "Manual",
   other: "Other",
 };

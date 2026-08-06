@@ -45,6 +45,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 20;
+const OPENAI_LOGO = "/openai.png";
 
 type StatusFilter = SaleStatus | "all";
 type SourceFilter = SaleSource | "all";
@@ -224,9 +225,8 @@ export default function SalesPage() {
   const sourceTabs: { value: SourceFilter; label: string }[] = [
     { value: "all", label: "ทุกแหล่งที่มา" },
     { value: "zortout", label: "Zortout" },
-    { value: "receipt", label: "ใบเสร็จ (AI)" },
+    { value: "receipt", label: "ใบเสร็จ" },
     { value: "omisell", label: "Omisell" },
-    { value: "manual", label: "Manual" },
     { value: "other", label: "Other" },
   ];
 
@@ -261,9 +261,15 @@ export default function SalesPage() {
               }
               className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <RefreshCw
-                className={`size-4${isStartingReceiptSync || isReceiptSyncActive ? " animate-spin" : ""}`}
-              />
+              {isStartingReceiptSync || isReceiptSyncActive ? (
+                <RefreshCw className="size-4 animate-spin" />
+              ) : (
+                <img
+                  src={OPENAI_LOGO}
+                  alt=""
+                  className="size-4 shrink-0 object-contain"
+                />
+              )}
               Sync จากใบเสร็จ (AI)
               {receiptMissingCount > 0
                 ? ` (${formatNumber(receiptMissingCount)})`
