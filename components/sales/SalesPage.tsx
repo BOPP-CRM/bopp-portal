@@ -1,19 +1,26 @@
 "use client";
 
+import MemberAvatar from "@/components/members/MemberAvatar";
 import SaleDetailModal, { StatusBadge } from "@/components/sales/SaleDetailModal";
 import SourceBadge from "@/components/sales/SourceBadge";
 import {
   getZortoutSaleSyncProgress,
   useZortoutSaleSyncJob,
 } from "@/components/sales/useZortoutSaleSyncJob";
+import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
+import { useApp } from "@/providers/app-provider";
 import {
   getSales,
   getZortoutSaleSyncStatus,
   startZortoutSaleSync,
 } from "@/services/sales/sales";
-import type { PortalSale, SaleSource, SaleStatus } from "@/services/sales/types";
-import { useApp } from "@/providers/app-provider";
+import type {
+  PortalSale,
+  SaleMember,
+  SaleSource,
+  SaleStatus,
+} from "@/services/sales/types";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
 import { isAdmin } from "@/utils/roles";
@@ -21,6 +28,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  Loader2,
   RefreshCw,
   Search,
 } from "lucide-react";
@@ -163,6 +171,7 @@ export default function SalesPage() {
   ];
 
   const syncProgress = syncJob ? getZortoutSaleSyncProgress(syncJob) : 0;
+  const showSyncButton = canSync && zortoutConfigured;
 
   return (
     <div className="p-4 md:p-8">
@@ -172,85 +181,94 @@ export default function SalesPage() {
             รายการขาย
           </h1>
           <p className="mt-1 text-sm text-gray-100">
-            รายการขายที่ชำระ
+            ทั้งหมด {formatNumber(total)} รายการ
           </p>
         </div>
 
-        <div className="flex w-full flex-col gap-3 md:max-w-xl md:flex-row md:items-center">
-          <form onSubmit={handleSearch} className="relative w-full md:flex-1">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {showSyncButton ? (
+            <button
+              type="button"
+              onClick={() => void handleStartSync()}
+              disabled={isStartingSync || isSyncActive || missingCount <= 0}
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`size-4${isStartingSync || isSyncActive ? " animate-spin" : ""}`}
+              />
+              Sync ข้อมูลไป Zortout
+              {missingCount > 0 ? ` (${formatNumber(missingCount)})` : ""}
+            </button>
+          ) : null}
+
+          <form onSubmit={handleSearch} className="relative w-full md:max-w-sm">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
             <input
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-              placeholder="ค้นหาเลขออเดอร์, ชื่อลูกค้า, สมาชิก..."
+              placeholder="ค้นหาเลขออเดอร์, ชื่อลูกค้า..."
               className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
             />
           </form>
-
-          {canSync && zortoutConfigured && (
-            <button
-              type="button"
-              onClick={() => void handleStartSync()}
-              disabled={
-                isStartingSync ||
-                isSyncActive ||
-                missingCount <= 0
-              }
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text hover:bg-gray-50 disabled:opacity-50"
-            >
-              <RefreshCw
-                className={`size-4${isStartingSync || isSyncActive ? " animate-spin" : ""}`}
-              />
-              Sync Zortout
-              {missingCount > 0 ? ` (${missingCount})` : ""}
-            </button>
-          )}
         </div>
       </div>
 
-      {canSync && zortoutConfigured && missingCount > 0 && !isSyncActive && (
-        <div className="mb-4 rounded-xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
-          มีออเดอร์ Zortout ที่ชำระแล้วจาก webhook {missingCount} รายการ
+      {showSyncButton && missingCount > 0 && !isSyncActive ? (
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+          มีออเดอร์ Zortout ที่ชำระแล้ว {formatNumber(missingCount)} รายการ
           ที่ยังไม่ได้ sync เป็นรายการขาย
         </div>
-      )}
+      ) : null}
 
-      {isSyncActive && syncJob && (
-        <div className="mb-4 rounded-xl border border-brown-100/30 bg-brown-50 px-4 py-3 text-sm text-defualt-text">
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <span>
-              กำลัง sync จาก Zortout... {syncJob.processed}/{syncJob.total}
-            </span>
-            <span>{syncProgress}%</span>
+      {isSyncActive && syncJob ? (
+        <div className="mb-4 rounded-2xl border border-brown-yellow-20 bg-brown-yellow-5 px-4 py-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-sm font-medium text-defualt-text">
+                Sync รายการขายจาก Zortout
+              </p>
+              <p className="mt-1 text-sm text-gray-100">
+                กำลัง sync... {formatNumber(syncJob.processed)} /{" "}
+                {formatNumber(syncJob.total)}
+              </p>
+            </div>
+            <Loader2 className="size-5 shrink-0 animate-spin text-brown-100" />
           </div>
-          <div className="h-2 overflow-hidden rounded-full bg-white">
-            <div
-              className="h-full rounded-full bg-brown-100 transition-all"
-              style={{ width: `${syncProgress}%` }}
-            />
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between text-xs text-gray-100">
+              <span>
+                สำเร็จ {formatNumber(syncJob.synced)} · ข้าม{" "}
+                {formatNumber(syncJob.skipped)} · ล้มเหลว{" "}
+                {formatNumber(syncJob.failed)}
+              </span>
+              <span>{syncProgress}%</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-brown-100 transition-all duration-300"
+                style={{ width: `${syncProgress}%` }}
+              />
+            </div>
           </div>
-          {syncJob.current_order && (
-            <p className="mt-2 text-xs text-gray-100">
+          {syncJob.current_order ? (
+            <p className="mt-3 text-xs text-gray-100">
               กำลังดึงออเดอร์{" "}
               {syncJob.current_order.order_number ||
                 syncJob.current_order.zortout_order_id}
             </p>
-          )}
+          ) : null}
+          {syncJob.last_error ? (
+            <p className="mt-3 text-xs text-red-100">{syncJob.last_error}</p>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
-      {syncMessage && (
-        <div className="mb-4 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+      {syncMessage ? (
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
           {syncMessage}
         </div>
-      )}
-
-      {(error || syncJobError) && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error || syncJobError}
-        </div>
-      )}
+      ) : null}
 
       <div className="mb-4 flex flex-wrap gap-2">
         {statusTabs.map((tab) => (
@@ -258,10 +276,10 @@ export default function SalesPage() {
             key={tab.value}
             type="button"
             onClick={() => setStatusFilter(tab.value)}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+            className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
               statusFilter === tab.value
                 ? "bg-brown-100 text-white"
-                : "bg-white text-gray-100 hover:bg-gray-50"
+                : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
             }`}
           >
             {tab.label}
@@ -269,16 +287,16 @@ export default function SalesPage() {
         ))}
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap gap-2">
         {sourceTabs.map((tab) => (
           <button
             key={tab.value}
             type="button"
             onClick={() => setSourceFilter(tab.value)}
-            className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`cursor-pointer rounded-4xl px-3 py-1.5 text-xs font-medium transition ${
               sourceFilter === tab.value
-                ? "border-brown-100 bg-brown-50 text-brown-100"
-                : "border-gray-200 bg-white text-gray-100 hover:bg-gray-50"
+                ? "bg-brown-yellow-5 text-brown-100"
+                : "border border-gray-200 bg-white text-gray-100 hover:bg-gray-10"
             }`}
           >
             {tab.label}
@@ -286,116 +304,218 @@ export default function SalesPage() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <TableSkeleton columns={8} rows={8} />
+          <TableSkeleton rows={6} columns={8} />
+        ) : error || syncJobError ? (
+          <div className="p-6 text-sm text-red-100">
+            {error || syncJobError}
+          </div>
         ) : sales.length === 0 ? (
-          <div className="px-6 py-16 text-center text-sm text-gray-100">
-            ไม่พบรายการขาย
-          </div>
+          <div className="p-6 text-sm text-gray-100">ไม่พบรายการขาย</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="border-b border-gray-200 bg-gray-50 text-left text-gray-100">
-                <tr>
-                  <th className="px-4 py-3 font-medium">เลขออเดอร์</th>
-                  <th className="px-4 py-3 font-medium">แหล่งที่มา</th>
-                  <th className="px-4 py-3 font-medium">วันที่</th>
-                  <th className="px-4 py-3 font-medium">ลูกค้า</th>
-                  <th className="px-4 py-3 font-medium">สมาชิก</th>
-                  <th className="px-4 py-3 font-medium text-right">ยอดรวม</th>
-                  <th className="px-4 py-3 font-medium">สถานะ</th>
-                  <th className="px-4 py-3 font-medium text-center">ดู</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {sales.map((sale) => (
-                  <tr key={sale.id} className="hover:bg-gray-50/80">
-                    <td className="px-4 py-3 font-medium text-defualt-text">
-                      {displayValue(sale.order_number || sale.external_id)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <SourceBadge
-                        source={sale.source}
-                        label={sale.source_label}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-gray-100">
-                      {displayValue(sale.order_date)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-100">
-                      {displayValue(sale.customer_name)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {sale.user ? (
-                        <Link
-                          href={`/dashboard/members/${sale.user.id}`}
-                          className="text-brown-100 hover:underline"
-                        >
-                          {sale.user.display_name}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-100">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right font-medium">
-                      {formatNumber(sale.amount)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={sale.status} />
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSaleId(sale.id)}
-                        className="inline-flex size-8 items-center justify-center rounded-lg text-gray-100 hover:bg-gray-100 hover:text-brown-100"
-                        aria-label="ดูรายละเอียด"
-                      >
-                        <Eye className="size-4" />
-                      </button>
-                    </td>
+          <>
+            <div className="divide-y divide-gray-200 lg:hidden">
+              {sales.map((sale) => (
+                <SaleCard
+                  key={sale.id}
+                  sale={sale}
+                  onOpen={() => setSelectedSaleId(sale.id)}
+                />
+              ))}
+            </div>
+
+            <div className="hidden overflow-x-auto lg:block">
+              <table className="w-full min-w-[900px] text-left text-sm">
+                <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
+                  <tr>
+                    <th className="px-4 py-4 font-medium">เลขออเดอร์</th>
+                    <th className="px-4 py-4 font-medium">แหล่งที่มา</th>
+                    <th className="px-4 py-4 font-medium whitespace-nowrap">
+                      วันที่
+                    </th>
+                    <th className="px-4 py-4 font-medium">ลูกค้า</th>
+                    <th className="min-w-[160px] px-4 py-4 font-medium">
+                      สมาชิก
+                    </th>
+                    <th className="px-4 py-4 font-medium whitespace-nowrap">
+                      ยอดรวม
+                    </th>
+                    <th className="px-4 py-4 font-medium">สถานะ</th>
+                    <th className="px-4 py-4 font-medium" />
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {sales.map((sale) => (
+                    <tr
+                      key={sale.id}
+                      className="border-b border-gray-200 last:border-b-0"
+                    >
+                      <td className="max-w-[160px] truncate px-4 py-4 font-medium text-defualt-text">
+                        {displayValue(sale.order_number || sale.external_id)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <SourceBadge
+                          source={sale.source}
+                          label={sale.source_label}
+                        />
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-gray-100">
+                        {displayValue(sale.order_date)}
+                      </td>
+                      <td className="px-4 py-4 text-defualt-text">
+                        {displayValue(sale.customer_name)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {sale.user ? (
+                          <MemberCell user={sale.user} />
+                        ) : (
+                          <span className="text-gray-100">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap font-medium text-brown-100">
+                        {formatNumber(sale.amount)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <StatusBadge status={sale.status} />
+                      </td>
+                      <td className="px-4 py-4">
+                        <ActionMenu
+                          ariaLabel="ดูรายละเอียดการขาย"
+                          items={[
+                            {
+                              label: "ดูรายละเอียด",
+                              icon: <Eye className="size-4" />,
+                              onClick: () => setSelectedSaleId(sale.id),
+                            },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
+
+        {!loading && !error && total > 0 ? (
+          <div className="flex flex-col gap-3 border-t border-gray-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-100">
+              หน้า {currentPage} จาก {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={!canGoPrev}
+                onClick={() =>
+                  setOffset((prev) => Math.max(0, prev - PAGE_SIZE))
+                }
+                className="inline-flex items-center gap-1 rounded-4xl border border-gray-200 px-4 py-2 text-sm text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft className="size-4" />
+                ก่อนหน้า
+              </button>
+              <button
+                type="button"
+                disabled={!canGoNext}
+                onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
+                className="inline-flex items-center gap-1 rounded-4xl border border-gray-200 px-4 py-2 text-sm text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                ถัดไป
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      {!loading && total > 0 && (
-        <div className="mt-4 flex items-center justify-between text-sm text-gray-100">
-          <span>
-            หน้า {currentPage} / {totalPages} ({total} รายการ)
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={!canGoPrev}
-              onClick={() => setOffset((prev) => Math.max(0, prev - PAGE_SIZE))}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 disabled:opacity-40"
-            >
-              <ChevronLeft className="size-4" />
-              ก่อนหน้า
-            </button>
-            <button
-              type="button"
-              disabled={!canGoNext}
-              onClick={() => setOffset((prev) => prev + PAGE_SIZE)}
-              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-2 disabled:opacity-40"
-            >
-              ถัดไป
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {selectedSaleId && (
+      {selectedSaleId ? (
         <SaleDetailModal
           saleId={selectedSaleId}
           onClose={() => setSelectedSaleId(null)}
         />
-      )}
+      ) : null}
+    </div>
+  );
+}
+
+function MemberCell({ user }: { user: SaleMember }) {
+  return (
+    <div className="flex min-w-0 items-center gap-3">
+      <MemberAvatar
+        name={user.display_name}
+        pictureUrl={user.picture_url}
+        size="sm"
+      />
+      <div className="min-w-0">
+        <Link
+          href={`/dashboard/members/${user.id}`}
+          className="block truncate font-medium text-defualt-text hover:text-brown-100"
+        >
+          {user.display_name}
+        </Link>
+        <p className="truncate text-xs text-gray-100">
+          {displayValue(user.phone || user.email || user.line_user_id)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SaleCard({
+  sale,
+  onOpen,
+}: {
+  sale: PortalSale;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="space-y-4 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-semibold text-defualt-text">
+            {displayValue(sale.order_number || sale.external_id)}
+          </p>
+          <p className="mt-1 text-xs text-gray-100">
+            {displayValue(sale.order_date)}
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          <StatusBadge status={sale.status} />
+          <ActionMenu
+            ariaLabel="ดูรายละเอียดการขาย"
+            items={[
+              {
+                label: "ดูรายละเอียด",
+                icon: <Eye className="size-4" />,
+                onClick: onOpen,
+              },
+            ]}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <SourceBadge source={sale.source} label={sale.source_label} />
+      </div>
+
+      {sale.user ? <MemberCell user={sale.user} /> : null}
+
+      <dl className="grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <dt className="text-xs text-gray-100">ลูกค้า</dt>
+          <dd className="font-medium text-defualt-text">
+            {displayValue(sale.customer_name)}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs text-gray-100">ยอดรวม</dt>
+          <dd className="font-medium text-brown-100">
+            {formatNumber(sale.amount)}
+          </dd>
+        </div>
+      </dl>
     </div>
   );
 }

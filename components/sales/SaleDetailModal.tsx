@@ -1,5 +1,6 @@
 "use client";
 
+import MemberAvatar from "@/components/members/MemberAvatar";
 import SourceBadge from "@/components/sales/SourceBadge";
 import { ModalDetailSkeleton } from "@/components/util/Skeleton";
 import { getSale, type PortalSale } from "@/services/sales/sales";
@@ -18,22 +19,31 @@ type SaleDetailModalProps = {
   onClose: () => void;
 };
 
-export function StatusBadge({ status }: { status: SaleStatus }) {
+export function StatusBadge({
+  status,
+  className = "",
+}: {
+  status: SaleStatus;
+  className?: string;
+}) {
   const styles =
     status === "paid"
-      ? "bg-green-50 text-green-700"
-      : "bg-gray-100 text-gray-600";
+      ? "bg-brown-yellow-5 text-brown-100"
+      : "bg-red-100/10 text-red-100";
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${styles}`}
+      className={`rounded-full px-3 py-1 text-xs font-medium ${styles} ${className}`}
     >
       {SALE_STATUS_LABELS[status]}
     </span>
   );
 }
 
-export default function SaleDetailModal({ saleId, onClose }: SaleDetailModalProps) {
+export default function SaleDetailModal({
+  saleId,
+  onClose,
+}: SaleDetailModalProps) {
   const [sale, setSale] = useState<PortalSale | null>(null);
   const [loading, setLoading] = useState(true);
   const [isClosing, setIsClosing] = useState(false);
@@ -62,6 +72,19 @@ export default function SaleDetailModal({ saleId, onClose }: SaleDetailModalProp
     setTimeout(onClose, MODAL_EXIT_MS);
   };
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") handleClose();
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   return (
     <div
       className={`fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 md:items-center md:p-4${
@@ -76,127 +99,174 @@ export default function SaleDetailModal({ saleId, onClose }: SaleDetailModalProp
         onClick={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-          <div>
+          <div className="min-w-0">
             <h2 className="text-lg font-semibold text-defualt-text">
               รายละเอียดการขาย
             </h2>
-            {sale && (
-              <p className="mt-0.5 text-sm text-gray-100">
+            {sale ? (
+              <p className="mt-0.5 truncate text-sm text-gray-100">
                 {displayValue(sale.order_number || sale.external_id)}
               </p>
-            )}
+            ) : null}
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="flex size-9 items-center justify-center rounded-lg text-gray-100 hover:bg-gray-100"
+            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-100 transition hover:bg-gray-10"
             aria-label="ปิด"
           >
             <X className="size-5" />
           </button>
         </div>
 
-        <div className="overflow-y-auto px-5 py-4">
+        <div className="overflow-y-auto px-5 py-5">
           {loading ? (
             <ModalDetailSkeleton />
           ) : error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
               {error}
             </div>
           ) : sale ? (
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={sale.status} />
-                <SourceBadge
-                  source={sale.source}
-                  label={sale.source_label}
-                />
+                <SourceBadge source={sale.source} label={sale.source_label} />
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <InfoItem label="เลขออเดอร์" value={sale.order_number || sale.external_id} />
-                <InfoItem label="วันที่สั่งซื้อ" value={sale.order_date} />
-                <InfoItem label="ชื่อลูกค้า" value={sale.customer_name} />
-                <InfoItem label="เบอร์โทร" value={sale.customer_phone} />
-                <InfoItem label="อีเมล" value={sale.customer_email} />
-                <InfoItem label="สถานะชำระเงิน" value={sale.payment_status} />
-                <InfoItem label="ยอดรวม" value={formatNumber(sale.amount)} />
-                <InfoItem label="ยอดชำระ" value={formatNumber(sale.payment_amount)} />
-                <InfoItem label="ส่วนลด" value={formatNumber(sale.discount)} />
-                <InfoItem label="VAT" value={formatNumber(sale.vat_amount)} />
-                <InfoItem
-                  label="อัปเดตล่าสุด"
-                  value={sale.last_sync_at ? formatDateTime(sale.last_sync_at) : "-"}
-                />
-              </div>
+              <Section title="ข้อมูลออเดอร์">
+                <dl className="grid gap-4 text-sm md:grid-cols-2">
+                  <DetailItem
+                    label="เลขออเดอร์"
+                    value={displayValue(sale.order_number || sale.external_id)}
+                  />
+                  <DetailItem
+                    label="วันที่สั่งซื้อ"
+                    value={displayValue(sale.order_date)}
+                  />
+                  <DetailItem
+                    label="ชื่อลูกค้า"
+                    value={displayValue(sale.customer_name)}
+                  />
+                  <DetailItem
+                    label="เบอร์โทร"
+                    value={displayValue(sale.customer_phone)}
+                  />
+                  <DetailItem
+                    label="อีเมล"
+                    value={displayValue(sale.customer_email)}
+                  />
+                  <DetailItem
+                    label="สถานะชำระเงิน"
+                    value={displayValue(sale.payment_status)}
+                  />
+                  <DetailItem
+                    label="อัปเดตล่าสุด"
+                    value={
+                      sale.last_sync_at
+                        ? formatDateTime(sale.last_sync_at)
+                        : "-"
+                    }
+                  />
+                </dl>
+              </Section>
 
-              {sale.user && (
-                <section className="rounded-xl border border-gray-200 p-4">
-                  <h3 className="mb-3 text-sm font-semibold text-defualt-text">
-                    สมาชิกที่ผูกกับออเดอร์
-                  </h3>
+              <Section title="ยอดเงิน">
+                <dl className="grid gap-4 text-sm md:grid-cols-2">
+                  <DetailItem
+                    label="ยอดรวม"
+                    value={formatNumber(sale.amount)}
+                    valueClassName="text-brown-100"
+                  />
+                  <DetailItem
+                    label="ยอดชำระ"
+                    value={formatNumber(sale.payment_amount)}
+                  />
+                  <DetailItem
+                    label="ส่วนลด"
+                    value={formatNumber(sale.discount)}
+                  />
+                  <DetailItem
+                    label="VAT"
+                    value={formatNumber(sale.vat_amount)}
+                  />
+                </dl>
+              </Section>
+
+              {sale.user ? (
+                <Section title="สมาชิกที่ผูกกับออเดอร์">
                   <div className="flex items-center gap-3">
-                    {sale.user.picture_url && (
-                      <img
-                        src={sale.user.picture_url}
-                        alt=""
-                        className="size-10 rounded-full object-cover"
-                      />
-                    )}
-                    <div>
+                    <MemberAvatar
+                      name={sale.user.display_name}
+                      pictureUrl={sale.user.picture_url}
+                    />
+                    <div className="min-w-0">
                       <Link
                         href={`/dashboard/members/${sale.user.id}`}
-                        className="font-medium text-brown-100 hover:underline"
+                        className="font-medium text-defualt-text hover:text-brown-100"
                       >
                         {sale.user.display_name}
                       </Link>
-                      <p className="text-xs text-gray-100">
-                        {sale.user.phone || sale.user.email || sale.user.line_user_id}
+                      <p className="mt-0.5 truncate text-xs text-gray-100">
+                        {displayValue(
+                          sale.user.phone ||
+                            sale.user.email ||
+                            sale.user.line_user_id,
+                        )}
                       </p>
-                      {sale.user.tier && (
-                        <p className="text-xs text-gray-100">
-                          Tier: {sale.user.tier.name}
-                        </p>
-                      )}
+                      {sale.user.tier ? (
+                        <span className="mt-2 inline-block rounded-full bg-brown-yellow-5 px-3 py-1 text-xs font-medium text-brown-100">
+                          {sale.user.tier.name}
+                        </span>
+                      ) : null}
                     </div>
                   </div>
-                </section>
-              )}
+                </Section>
+              ) : null}
 
-              <section>
-                <h3 className="mb-3 text-sm font-semibold text-defualt-text">
-                  รายการสินค้า
-                </h3>
+              <Section title="รายการสินค้า">
                 {sale.lines && sale.lines.length > 0 ? (
-                  <div className="overflow-hidden rounded-xl border border-gray-200">
-                    <table className="min-w-full text-sm">
-                      <thead className="border-b border-gray-200 bg-gray-50 text-left text-gray-100">
+                  <div className="overflow-x-auto rounded-xl border border-gray-200">
+                    <table className="min-w-full text-left text-sm">
+                      <thead className="border-b border-gray-200 bg-gray-10 text-xs text-gray-100">
                         <tr>
-                          <th className="px-3 py-2 font-medium">SKU</th>
-                          <th className="px-3 py-2 font-medium">สินค้า</th>
-                          <th className="px-3 py-2 font-medium text-right">จำนวน</th>
-                          <th className="px-3 py-2 font-medium text-right">ราคา/หน่วย</th>
-                          <th className="px-3 py-2 font-medium text-right">ส่วนลด</th>
-                          <th className="px-3 py-2 font-medium text-right">รวม</th>
+                          <th className="px-3 py-2.5 font-medium">SKU</th>
+                          <th className="px-3 py-2.5 font-medium">สินค้า</th>
+                          <th className="px-3 py-2.5 font-medium text-right">
+                            จำนวน
+                          </th>
+                          <th className="px-3 py-2.5 font-medium text-right">
+                            ราคา/หน่วย
+                          </th>
+                          <th className="px-3 py-2.5 font-medium text-right">
+                            ส่วนลด
+                          </th>
+                          <th className="px-3 py-2.5 font-medium text-right">
+                            รวม
+                          </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-100">
+                      <tbody>
                         {sale.lines.map((line) => (
-                          <tr key={line.id}>
-                            <td className="px-3 py-2 text-gray-100">
+                          <tr
+                            key={line.id}
+                            className="border-b border-gray-200 last:border-b-0"
+                          >
+                            <td className="px-3 py-3 text-gray-100">
                               {displayValue(line.sku)}
                             </td>
-                            <td className="px-3 py-2">{line.name}</td>
-                            <td className="px-3 py-2 text-right">
+                            <td className="px-3 py-3 text-defualt-text">
+                              {line.name}
+                            </td>
+                            <td className="px-3 py-3 text-right text-defualt-text">
                               {formatNumber(line.quantity)}
                             </td>
-                            <td className="px-3 py-2 text-right">
+                            <td className="px-3 py-3 text-right text-defualt-text">
                               {formatNumber(line.price_per_unit)}
                             </td>
-                            <td className="px-3 py-2 text-right">
+                            <td className="px-3 py-3 text-right text-defualt-text">
                               {formatNumber(line.discount)}
                             </td>
-                            <td className="px-3 py-2 text-right font-medium">
+                            <td className="px-3 py-3 text-right font-medium text-brown-100">
                               {formatNumber(line.total_price)}
                             </td>
                           </tr>
@@ -207,7 +277,7 @@ export default function SaleDetailModal({ saleId, onClose }: SaleDetailModalProp
                 ) : (
                   <p className="text-sm text-gray-100">ไม่มีรายการสินค้า</p>
                 )}
-              </section>
+              </Section>
             </div>
           ) : null}
         </div>
@@ -216,19 +286,38 @@ export default function SaleDetailModal({ saleId, onClose }: SaleDetailModalProp
   );
 }
 
-function InfoItem({
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5">
+      <h3 className="mb-4 text-sm font-semibold text-defualt-text">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function DetailItem({
   label,
   value,
+  valueClassName,
 }: {
   label: string;
-  value: string | number | false | null | undefined;
+  value: string;
+  valueClassName?: string;
 }) {
   return (
     <div>
-      <p className="text-xs text-gray-100">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-defualt-text">
-        {displayValue(typeof value === "number" ? String(value) : value)}
-      </p>
+      <dt className="text-gray-100">{label}</dt>
+      <dd
+        className={`mt-0.5 font-medium break-all text-defualt-text ${valueClassName ?? ""}`}
+      >
+        {value}
+      </dd>
     </div>
   );
 }
