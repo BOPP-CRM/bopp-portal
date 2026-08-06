@@ -12,6 +12,7 @@ type SourceBadgeProps = {
 const SOURCE_STYLES: Record<SaleSource, string> = {
   zortout: "bg-brown-yellow-5 text-brown-100",
   omisell: "bg-gray-10 text-defualt-text",
+  receipt: "bg-brown-yellow-5 text-brown-100",
   manual: "bg-gray-10 text-defualt-text",
   other: "bg-gray-10 text-gray-100",
 };
