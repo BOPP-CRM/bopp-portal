@@ -13,22 +13,19 @@ import ZortoutWebhookLogs from "@/components/connections/ZortoutWebhookLogs";
 import dialog from "@/components/util/dialog";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { handleError } from "@/utils/errors";
-import { displayValue } from "@/utils/format";
-import { CheckCircle2, Info, RefreshCw } from "lucide-react";
+import { Info, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 const ZORTOUT_LOGO = "/zoutout.png";
 
-const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
-
 export default function ZortoutPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<ZortoutStatus | null>(null);
+
   const [storename, setStorename] = useState("");
   const [apikey, setApikey] = useState("");
   const [apisecret, setApisecret] = useState("");
@@ -37,7 +34,11 @@ export default function ZortoutPanel() {
     setError(null);
     try {
       const response = await getZortoutStatus();
-      setStatus(response.zortout);
+      const next = response.zortout;
+      setStatus(next);
+      if (next.store_name) {
+        setStorename(next.store_name);
+      }
     } catch (loadError) {
       setError(handleError(loadError).message);
     } finally {
@@ -60,12 +61,26 @@ export default function ZortoutPanel() {
     }
   };
 
-  const handleConnect = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleConnect = async () => {
+    if (!storename.trim() || !apikey.trim() || !apisecret.trim()) {
+      setError("กรุณากรอกข้อมูลให้ครบทุกช่อง");
+      return;
+    }
+
+    if (isEditing) {
+      const result = await dialog.fire({
+        title: "บันทึกข้อมูลการเชื่อมต่อใหม่",
+        description:
+          "ระบบจะใช้ Store Name / API Key / Secret ใหม่แทนค่าเดิมทันที ตรวจสอบให้แน่ใจว่าข้อมูลถูกต้องก่อนบันทึก",
+        icon: <Info className="text-brown-100" />,
+        confirmText: "บันทึก",
+        confirmVariant: "primary",
+      });
+      if (!result.isConfirmed) return;
+    }
+
     setIsSubmitting(true);
     setError(null);
-    setSuccessMessage(null);
-
     try {
       const response = await connectZortout({
         storename: storename.trim(),
@@ -73,48 +88,38 @@ export default function ZortoutPanel() {
         apisecret: apisecret.trim(),
       });
       setStatus(response.zortout);
-      setStorename("");
       setApikey("");
       setApisecret("");
-      setSuccessMessage("เชื่อมต่อสำเร็จ");
+      setIsEditing(false);
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleStartEditing = () => {
+    setError(null);
+    setApikey("");
+    setApisecret("");
+    setIsEditing(true);
+  };
+
+  const handleCancelEditing = () => {
+    setError(null);
+    if (status?.store_name) {
+      setStorename(status.store_name);
+    }
+    setApikey("");
+    setApisecret("");
+    setIsEditing(false);
   };
 
   const handleResync = async () => {
     setIsSubmitting(true);
     setError(null);
-    setSuccessMessage(null);
-
     try {
       const response = await syncZortoutWebhook();
-      setStatus(response.zortout);
-      setSuccessMessage("อัปเดตแล้ว");
-    } catch (submitError) {
-      setError(handleError(submitError).message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDisable = async () => {
-    const result = await dialog.fire({
-      title: "ปิดการเชื่อมต่อ",
-      description: "Webhook จะหยุดจนกว่าจะเชื่อมต่อใหม่",
-      icon: <Info className="text-brown-100" />,
-      confirmText: "ปิดการเชื่อมต่อ",
-      confirmVariant: "primary",
-    });
-    if (!result.isConfirmed) return;
-
-    setIsSubmitting(true);
-    setError(null);
-    setSuccessMessage(null);
-    try {
-      const response = await disableZortout();
       setStatus(response.zortout);
     } catch (submitError) {
       setError(handleError(submitError).message);
@@ -126,7 +131,8 @@ export default function ZortoutPanel() {
   const handleRegenerateKeys = async () => {
     const result = await dialog.fire({
       title: "สร้าง Key ใหม่",
-      description: "จะ sync ไป Zortout อัตโนมัติ",
+      description:
+        "ระบบจะสร้าง key1 / key2 / key3 ใหม่แล้ว sync ไป Zortout อัตโนมัติ",
       icon: <Info className="text-brown-100" />,
       confirmText: "สร้าง Key ใหม่",
       confirmVariant: "primary",
@@ -135,13 +141,35 @@ export default function ZortoutPanel() {
 
     setIsSubmitting(true);
     setError(null);
-    setSuccessMessage(null);
     try {
       const regenerated = await regenerateZortoutKeys();
       setStatus(regenerated.zortout);
       const synced = await syncZortoutWebhook();
       setStatus(synced.zortout);
-      setSuccessMessage("อัปเดต Key แล้ว");
+    } catch (submitError) {
+      setError(handleError(submitError).message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDisable = async () => {
+    const result = await dialog.fire({
+      title: "ปิดการเชื่อมต่อ Zortout",
+      description:
+        "Webhook จะหยุดรับออเดอร์จาก Zortout จนกว่าจะเปิดการเชื่อมต่ออีกครั้ง",
+      icon: <Info className="text-brown-100" />,
+      confirmText: "ปิดการเชื่อมต่อ",
+      confirmVariant: "primary",
+    });
+    if (!result.isConfirmed) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const response = await disableZortout();
+      setStatus(response.zortout);
+      setIsEditing(false);
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -157,234 +185,244 @@ export default function ZortoutPanel() {
     return error ? <p className="p-6 text-sm text-red-100">{error}</p> : null;
   }
 
-  const isActive = status.configured && status.enabled;
-  const needsCredentials = isActive && !status.api_credentials_configured;
+  const isEnabled = status.configured && status.enabled;
+  const needsCredentials = isEnabled && !status.api_credentials_configured;
+  const formEditable = !isEnabled || needsCredentials || isEditing;
 
   return (
-    <div className="space-y-8 p-6 md:p-8">
-      <ZortoutHeader status={status} />
-
-      {!isActive || needsCredentials ? (
-        <ConnectForm
-          storename={storename}
-          apikey={apikey}
-          apisecret={apisecret}
-          isSubmitting={isSubmitting}
-          submitLabel={
-            needsCredentials ? "บันทึกและเชื่อมต่อ" : "เชื่อมต่อ"
-          }
-          onStorenameChange={setStorename}
-          onApikeyChange={setApikey}
-          onApisecretChange={setApisecret}
-          onSubmit={handleConnect}
-        />
-      ) : (
-        <ConnectedSummary
-          status={status}
-          isSubmitting={isSubmitting}
-          onCopy={(value, label) => void copyToClipboard(value, label)}
-          onResync={() => void handleResync()}
-          onRegenerateKeys={() => void handleRegenerateKeys()}
-          onDisable={() => void handleDisable()}
-        />
-      )}
-
-      <ZortoutWebhookLogs />
-
-      {copyMessage ? (
-        <p className="text-xs text-brown-100">{copyMessage}</p>
-      ) : null}
-      {successMessage ? (
-        <p className="text-sm text-green-700">{successMessage}</p>
-      ) : null}
-      {error ? <p className="text-sm text-red-100">{error}</p> : null}
-    </div>
-  );
-}
-
-function ZortoutHeader({ status }: { status: ZortoutStatus }) {
-  return (
-    <div className="flex items-center gap-4">
-      <img
-        src={ZORTOUT_LOGO}
-        alt="Zortout"
-        className="size-14 shrink-0 rounded-2xl object-cover shadow-sm"
-      />
-      <div className="flex min-w-0 flex-wrap items-center gap-2">
-        <h2 className="text-lg font-semibold text-defualt-text">Zortout</h2>
-        <ZortoutStatusBadge status={status} />
-      </div>
-    </div>
-  );
-}
-
-function ConnectForm({
-  storename,
-  apikey,
-  apisecret,
-  isSubmitting,
-  submitLabel,
-  onStorenameChange,
-  onApikeyChange,
-  onApisecretChange,
-  onSubmit,
-}: {
-  storename: string;
-  apikey: string;
-  apisecret: string;
-  isSubmitting: boolean;
-  submitLabel: string;
-  onStorenameChange: (value: string) => void;
-  onApikeyChange: (value: string) => void;
-  onApisecretChange: (value: string) => void;
-  onSubmit: (event: React.FormEvent) => void;
-}) {
-  return (
-    <section>
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="grid gap-4 md:grid-cols-3">
-          <input
-            type="text"
-            value={storename}
-            onChange={(event) => onStorenameChange(event.target.value)}
-            className={inputClassName}
-            placeholder="Store Name"
-            autoComplete="off"
-            required
+    <div className="space-y-6 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <img
+            src={ZORTOUT_LOGO}
+            alt="Zortout"
+            className="size-14 shrink-0 rounded-2xl bg-white object-contain shadow-sm"
           />
-          <input
-            type="text"
-            value={apikey}
-            onChange={(event) => onApikeyChange(event.target.value)}
-            className={inputClassName}
-            placeholder="API Key"
-            autoComplete="off"
-            required
-          />
-          <input
-            type="password"
-            value={apisecret}
-            onChange={(event) => onApisecretChange(event.target.value)}
-            className={inputClassName}
-            placeholder="API Secret"
-            autoComplete="off"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="cursor-pointer rounded-4xl bg-brown-100 px-6 py-3 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {isSubmitting ? "กำลังเชื่อมต่อ..." : submitLabel}
-        </button>
-      </form>
-    </section>
-  );
-}
-
-function ConnectedSummary({
-  status,
-  isSubmitting,
-  onCopy,
-  onResync,
-  onRegenerateKeys,
-  onDisable,
-}: {
-  status: ZortoutStatus;
-  isSubmitting: boolean;
-  onCopy: (value: string, label?: string) => void;
-  onResync: () => void;
-  onRegenerateKeys: () => void;
-  onDisable: () => void;
-}) {
-  return (
-    <section className="space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-green-200 bg-green-50/50 px-4 py-3">
-          <CheckCircle2 className="size-5 shrink-0 text-green-700" />
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-defualt-text">
-              {displayValue(status.store_name)}
-            </p>
-            <p className="text-xs text-gray-100">
-              {status.webhook_synced ? "พร้อมใช้งาน" : "รอ sync"}
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-base font-semibold text-defualt-text">
+                Zortout Integration
+              </h2>
+              <ZortoutStatusBadge status={status} />
+            </div>
+            <p className="mt-1 text-sm text-gray-100">
+              เชื่อมต่อกับ Zortout เพื่อให้คะแนนสมาชิกเมื่อออเดอร์ชำระเงินแล้ว
             </p>
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <ActionButton
-            disabled={isSubmitting || !status.api_credentials_configured}
-            onClick={onResync}
-            label={isSubmitting ? "..." : "อัปเดต"}
-            icon={<RefreshCw className="size-4" />}
-            variant="outlined"
-          />
-          <ActionButton
-            disabled={isSubmitting}
-            onClick={onRegenerateKeys}
-            label={isSubmitting ? "..." : "Key ใหม่"}
-            icon={<RefreshCw className="size-4" />}
-            variant="outlined"
-          />
-          <ActionButton
-            disabled={isSubmitting}
-            onClick={onDisable}
-            label="ปิด"
-            variant="outlined"
-          />
+        {isEnabled && !needsCredentials && !isEditing ? (
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <ActionButton
+              disabled={isSubmitting}
+              onClick={handleStartEditing}
+              label="แก้ไขข้อมูลการเชื่อมต่อ"
+              variant="outlined"
+            />
+            <ActionButton
+              disabled={isSubmitting || !status.api_credentials_configured}
+              onClick={() => void handleResync()}
+              label={isSubmitting ? "กำลังอัปเดต..." : "อัปเดต"}
+              icon={<RefreshCw className="size-4" />}
+              variant="outlined"
+            />
+            <ActionButton
+              disabled={isSubmitting}
+              onClick={() => void handleRegenerateKeys()}
+              label={isSubmitting ? "กำลังสร้าง..." : "สร้าง Key ใหม่"}
+              icon={<RefreshCw className="size-4" />}
+              variant="outlined"
+            />
+            <ActionButton
+              disabled={isSubmitting}
+              onClick={() => void handleDisable()}
+              label={isSubmitting ? "กำลังปิด..." : "ปิดการเชื่อมต่อ"}
+              variant="outlined"
+            />
+          </div>
+        ) : null}
+      </div>
+
+      <section className="space-y-4">
+        <h3 className="text-sm font-semibold text-defualt-text">
+          <span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-brown-100 text-xs font-semibold text-white">
+            1
+          </span>
+          กรอกข้อมูลการเชื่อมต่อ
+        </h3>
+
+        <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <FormField
+              label="Store Name"
+              required
+              value={storename}
+              onChange={setStorename}
+              placeholder="กรอก Store Name"
+              disabled={!formEditable}
+            />
+            <FormField
+              label="API Key"
+              required
+              value={apikey}
+              onChange={setApikey}
+              placeholder={
+                isEnabled && !isEditing && !needsCredentials
+                  ? "••••••••"
+                  : "กรอก API Key"
+              }
+              disabled={!formEditable}
+            />
+            <FormField
+              label="API Secret"
+              required
+              type="password"
+              value={apisecret}
+              onChange={setApisecret}
+              placeholder={
+                isEnabled && !isEditing && !needsCredentials
+                  ? "••••••••"
+                  : "กรอก API Secret"
+              }
+              disabled={!formEditable}
+            />
+          </div>
+
+          {formEditable ? (
+            <div className="mt-5 flex flex-wrap gap-2">
+              <ActionButton
+                disabled={isSubmitting}
+                onClick={() => void handleConnect()}
+                label={
+                  isSubmitting
+                    ? "กำลังบันทึก..."
+                    : isEditing
+                      ? "บันทึกการเปลี่ยนแปลง"
+                      : needsCredentials
+                        ? "บันทึกและเชื่อมต่อ"
+                        : "บันทึกและเปิดการเชื่อมต่อ"
+                }
+              />
+              {isEditing ? (
+                <ActionButton
+                  disabled={isSubmitting}
+                  onClick={handleCancelEditing}
+                  label="ยกเลิก"
+                  variant="outlined"
+                />
+              ) : null}
+            </div>
+          ) : null}
         </div>
-      </div>
+      </section>
 
-      <CopyField
-        label="URL"
-        value={status.webhook_base_url ?? ""}
-        onCopy={(value) => onCopy(value, " URL ")}
+      {isEnabled ? (
+        <section className="space-y-4">
+          <h3 className="text-sm font-semibold text-defualt-text">
+            <span className="mr-2 inline-flex size-6 items-center justify-center rounded-full bg-brown-100 text-xs font-semibold text-white">
+              2
+            </span>
+            Webhook URL และ Keys
+          </h3>
+
+          <div className="rounded-2xl border border-gray-200 p-4 sm:p-5">
+            <div className="space-y-5">
+              <CopyField
+                label="Webhook URL"
+                value={status.webhook_base_url ?? ""}
+                onCopy={(value) => void copyToClipboard(value, " Webhook URL ")}
+              />
+              <div className="border-t border-gray-200" />
+              <div className="grid gap-5 sm:grid-cols-3">
+                <CopyField
+                  label="key1"
+                  value={status.key1 ?? ""}
+                  onCopy={(value) => void copyToClipboard(value, " key1 ")}
+                />
+                <CopyField
+                  label="key2"
+                  value={status.key2 ?? ""}
+                  onCopy={(value) => void copyToClipboard(value, " key2 ")}
+                />
+                <CopyField
+                  label="key3"
+                  value={status.key3 ?? ""}
+                  onCopy={(value) => void copyToClipboard(value, " key3 ")}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {copyMessage ? (
+        <p className="text-xs text-brown-100">{copyMessage}</p>
+      ) : null}
+      {error ? <p className="text-sm text-red-100">{error}</p> : null}
+
+      {isEnabled ? <ZortoutWebhookLogs /> : null}
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  required,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  type = "text",
+}: {
+  label: string;
+  required?: boolean;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  type?: "text" | "password";
+}) {
+  return (
+    <div>
+      <label className="mb-1.5 block text-sm font-medium text-defualt-text">
+        {label}
+        {required ? (
+          <span className="ml-1 text-xs text-gray-100">(บังคับกรอก)</span>
+        ) : null}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        disabled={disabled}
+        autoComplete="off"
+        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-defualt-text placeholder-gray-100 outline-none transition focus:border-brown-100 focus:ring-1 focus:ring-brown-100 disabled:cursor-not-allowed disabled:bg-gray-10 disabled:opacity-70"
       />
-
-      <div className="grid gap-4 sm:grid-cols-3">
-        <CopyField
-          label="key1"
-          value={status.key1 ?? ""}
-          onCopy={(value) => onCopy(value, " key1 ")}
-        />
-        <CopyField
-          label="key2"
-          value={status.key2 ?? ""}
-          onCopy={(value) => onCopy(value, " key2 ")}
-        />
-        <CopyField
-          label="key3"
-          value={status.key3 ?? ""}
-          onCopy={(value) => onCopy(value, " key3 ")}
-        />
-      </div>
-    </section>
+    </div>
   );
 }
 
 function ZortoutStatusBadge({ status }: { status: ZortoutStatus }) {
   if (!status.configured) {
     return (
-      <span className="rounded-full bg-gray-10 px-2.5 py-0.5 text-xs font-medium text-gray-100">
-        ยังไม่เชื่อมต่อ
+      <span className="rounded-full bg-gray-10 px-2.5 py-1 text-xs font-medium text-gray-100">
+        ยังไม่ได้ตั้งค่า
       </span>
     );
   }
 
   if (status.enabled) {
     return (
-      <span className="rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-        เชื่อมต่อแล้ว
+      <span className="rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700">
+        เปิดใช้งาน
       </span>
     );
   }
 
   return (
-    <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-100">
-      ปิดอยู่
+    <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-medium text-red-100">
+      ปิดใช้งาน
     </span>
   );
 }
