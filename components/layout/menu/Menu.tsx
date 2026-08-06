@@ -11,6 +11,7 @@ import {
   Plug,
   QrCode,
   Receipt,
+  ShoppingCart,
   ShieldCheck,
   Ticket,
   UserCog,
@@ -78,6 +79,11 @@ const MENU_GROUPS: MenuGroup[] = [
         icon: <Receipt className={iconClassName} />,
         label: "ตรวจสอบใบเสร็จ",
         path: "/dashboard/receipts",
+      },
+      {
+        icon: <ShoppingCart className={iconClassName} />,
+        label: "รายการขาย",
+        path: "/dashboard/sales",
       },
       {
         icon: <Ticket className={iconClassName} />,

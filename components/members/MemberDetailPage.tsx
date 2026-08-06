@@ -1,6 +1,7 @@
 "use client";
 
 import AdjustPointModal from "@/components/members/AdjustPointModal";
+import MemberAvatar from "@/components/members/MemberAvatar";
 import UserCoupons from "@/components/members/UserCoupons";
 import UserPointHistory from "@/components/members/UserPointHistory";
 import ZortoutMemberSyncProgress, {
@@ -154,17 +155,11 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-start gap-4">
-            {user.picture_url ? (
-              <img
-                src={user.picture_url}
-                alt={user.display_name}
-                className="size-16 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex size-16 items-center justify-center rounded-full bg-brown-100 text-lg font-semibold text-white">
-                {user.display_name.charAt(0)}
-              </div>
-            )}
+            <MemberAvatar
+              name={user.display_name}
+              pictureUrl={user.picture_url}
+              size="lg"
+            />
             <div>
               <h1 className="text-2xl font-semibold text-defualt-text">
                 {user.display_name}

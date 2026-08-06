@@ -3,6 +3,7 @@
 import ZortoutMemberSyncProgress, {
   ZortoutSyncStatusBadge,
 } from "@/components/members/ZortoutMemberSyncProgress";
+import MemberAvatar from "@/components/members/MemberAvatar";
 import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import dialog from "@/components/util/dialog";
@@ -222,17 +223,10 @@ export default function MembersPage() {
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
-                        {user.picture_url ? (
-                          <img
-                            src={user.picture_url}
-                            alt={user.display_name}
-                            className="size-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex size-10 items-center justify-center rounded-full bg-brown-100 text-xs font-medium text-white">
-                            {user.display_name.charAt(0)}
-                          </div>
-                        )}
+                        <MemberAvatar
+                          name={user.display_name}
+                          pictureUrl={user.picture_url}
+                        />
                         <div>
                           <p className="font-medium text-defualt-text">
                             {user.display_name}

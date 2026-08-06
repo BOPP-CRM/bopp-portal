@@ -14,6 +14,7 @@ export const PORTAL_ROLE_OPTIONS = [
 
 const OPERATION_ALLOWED_PREFIXES = [
   "/dashboard/receipts",
+  "/dashboard/sales",
   "/dashboard/warranties",
 ];
 
