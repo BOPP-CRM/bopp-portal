@@ -16,7 +16,7 @@ const TABS: { id: Tab; label: string }[] = [
 const CONNECTIONS_TAB_KEY = "connections_tab";
 
 function isTab(value: string | null): value is Tab {
-  return value === "bopp-mcp" || value === "zortout";
+  return value === "bopp-mcp" || value === "zortout" || value === "omisell";
 }
 
 export default function ConnectionsPage() {

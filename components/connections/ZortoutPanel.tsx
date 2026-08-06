@@ -240,40 +240,42 @@ function ConnectForm({
   onSubmit: (event: React.FormEvent) => void;
 }) {
   return (
-    <section className="max-w-md">
-      <form onSubmit={onSubmit} className="space-y-3">
-        <input
-          type="text"
-          value={storename}
-          onChange={(event) => onStorenameChange(event.target.value)}
-          className={inputClassName}
-          placeholder="Store Name"
-          autoComplete="off"
-          required
-        />
-        <input
-          type="text"
-          value={apikey}
-          onChange={(event) => onApikeyChange(event.target.value)}
-          className={inputClassName}
-          placeholder="API Key"
-          autoComplete="off"
-          required
-        />
-        <input
-          type="password"
-          value={apisecret}
-          onChange={(event) => onApisecretChange(event.target.value)}
-          className={inputClassName}
-          placeholder="API Secret"
-          autoComplete="off"
-          required
-        />
+    <section>
+      <form onSubmit={onSubmit} className="space-y-4">
+        <div className="grid gap-4 md:grid-cols-3">
+          <input
+            type="text"
+            value={storename}
+            onChange={(event) => onStorenameChange(event.target.value)}
+            className={inputClassName}
+            placeholder="Store Name"
+            autoComplete="off"
+            required
+          />
+          <input
+            type="text"
+            value={apikey}
+            onChange={(event) => onApikeyChange(event.target.value)}
+            className={inputClassName}
+            placeholder="API Key"
+            autoComplete="off"
+            required
+          />
+          <input
+            type="password"
+            value={apisecret}
+            onChange={(event) => onApisecretChange(event.target.value)}
+            className={inputClassName}
+            placeholder="API Secret"
+            autoComplete="off"
+            required
+          />
+        </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="mt-2 w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+          className="cursor-pointer rounded-4xl bg-brown-100 px-6 py-3 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? "กำลังเชื่อมต่อ..." : submitLabel}
         </button>
@@ -298,16 +300,41 @@ function ConnectedSummary({
   onDisable: () => void;
 }) {
   return (
-    <section className="max-w-2xl space-y-5">
-      <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50/50 px-4 py-3">
-        <CheckCircle2 className="size-5 shrink-0 text-green-700" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-defualt-text">
-            {displayValue(status.store_name)}
-          </p>
-          <p className="text-xs text-gray-100">
-            {status.webhook_synced ? "พร้อมใช้งาน" : "รอ sync"}
-          </p>
+    <section className="space-y-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl border border-green-200 bg-green-50/50 px-4 py-3">
+          <CheckCircle2 className="size-5 shrink-0 text-green-700" />
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-defualt-text">
+              {displayValue(status.store_name)}
+            </p>
+            <p className="text-xs text-gray-100">
+              {status.webhook_synced ? "พร้อมใช้งาน" : "รอ sync"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <ActionButton
+            disabled={isSubmitting || !status.api_credentials_configured}
+            onClick={onResync}
+            label={isSubmitting ? "..." : "อัปเดต"}
+            icon={<RefreshCw className="size-4" />}
+            variant="outlined"
+          />
+          <ActionButton
+            disabled={isSubmitting}
+            onClick={onRegenerateKeys}
+            label={isSubmitting ? "..." : "Key ใหม่"}
+            icon={<RefreshCw className="size-4" />}
+            variant="outlined"
+          />
+          <ActionButton
+            disabled={isSubmitting}
+            onClick={onDisable}
+            label="ปิด"
+            variant="outlined"
+          />
         </div>
       </div>
 
@@ -332,29 +359,6 @@ function ConnectedSummary({
           label="key3"
           value={status.key3 ?? ""}
           onCopy={(value) => onCopy(value, " key3 ")}
-        />
-      </div>
-
-      <div className="flex flex-wrap gap-2">
-        <ActionButton
-          disabled={isSubmitting || !status.api_credentials_configured}
-          onClick={onResync}
-          label={isSubmitting ? "..." : "อัปเดต"}
-          icon={<RefreshCw className="size-4" />}
-          variant="outlined"
-        />
-        <ActionButton
-          disabled={isSubmitting}
-          onClick={onRegenerateKeys}
-          label={isSubmitting ? "..." : "Key ใหม่"}
-          icon={<RefreshCw className="size-4" />}
-          variant="outlined"
-        />
-        <ActionButton
-          disabled={isSubmitting}
-          onClick={onDisable}
-          label="ปิด"
-          variant="outlined"
         />
       </div>
     </section>
