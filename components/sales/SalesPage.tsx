@@ -196,7 +196,7 @@ export default function SalesPage() {
               <RefreshCw
                 className={`size-4${isStartingSync || isSyncActive ? " animate-spin" : ""}`}
               />
-              Sync ข้อมูลไป Zortout
+              Sync ข้อมูลจาก Zortout
               {missingCount > 0 ? ` (${formatNumber(missingCount)})` : ""}
             </button>
           ) : null}
