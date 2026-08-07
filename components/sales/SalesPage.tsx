@@ -3,6 +3,7 @@
 import AiSyncConfirmDialog, {
   useAiSyncGate,
 } from "@/components/sales/AiSyncConfirmDialog";
+import SalesExportModal from "@/components/sales/SalesExportModal";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import SaleDetailModal, { StatusBadge } from "@/components/sales/SaleDetailModal";
 import SourceBadge from "@/components/sales/SourceBadge";
@@ -18,6 +19,7 @@ import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { useApp } from "@/providers/app-provider";
 import {
+  exportSales,
   getSales,
   getReceiptSaleSyncStatus,
   getZortoutSaleSyncStatus,
@@ -36,6 +38,7 @@ import { isAdmin } from "@/utils/roles";
 import {
   ChevronLeft,
   ChevronRight,
+  Download,
   Eye,
   Loader2,
   RefreshCw,
@@ -70,6 +73,8 @@ export default function SalesPage() {
   const [isStartingSync, setIsStartingSync] = useState(false);
   const [isStartingReceiptSync, setIsStartingReceiptSync] = useState(false);
   const [showReceiptAiConfirm, setShowReceiptAiConfirm] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const canSync = isAdmin(me);
   const { requireOpenAiConfigured } = useAiSyncGate(openAiConfigured);
@@ -216,6 +221,22 @@ export default function SalesPage() {
     });
   };
 
+  const handleExportSales = async (year: number, month: number) => {
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      await exportSales(year, month);
+      setShowExportModal(false);
+      setSyncMessage("Export รายการขายสำเร็จ");
+      setTimeout(() => setSyncMessage(null), 4000);
+    } catch (exportError) {
+      setError(handleError(exportError).message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: "paid", label: "ชำระแล้ว" },
     { value: "void", label: "ยกเลิก" },
@@ -255,6 +276,17 @@ export default function SalesPage() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          {canSync ? (
+            <button
+              type="button"
+              onClick={() => setShowExportModal(true)}
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text transition hover:bg-gray-10"
+            >
+              <Download className="size-4" />
+              Export Excel
+            </button>
+          ) : null}
+
           {showReceiptSyncButton ? (
             <button
               type="button"
@@ -593,6 +625,17 @@ export default function SalesPage() {
         onConfirm={() => void handleStartReceiptSync()}
         loading={isStartingReceiptSync}
         confirmText="เริ่ม Sync"
+      />
+
+      <SalesExportModal
+        open={showExportModal}
+        loading={isExporting}
+        onClose={() => {
+          if (!isExporting) {
+            setShowExportModal(false);
+          }
+        }}
+        onConfirm={(year, month) => void handleExportSales(year, month)}
       />
     </div>
   );

@@ -1,4 +1,8 @@
 import apiClient from "@/services/api-client";
+import {
+  downloadBlob,
+  getFilenameFromContentDisposition,
+} from "@/utils/file";
 import type {
   PortalSale,
   SaleDetailResponse,
@@ -115,6 +119,20 @@ export const regenerateSaleWithAi = async (saleId: number, aiConfirmed = true) =
     mutationConfig,
   );
   return res.data;
+};
+
+export const exportSales = async (year: number, month: number) => {
+  const res = await apiClient.client.get<Blob>("/portal/sales/export", {
+    params: { year, month },
+    responseType: "blob",
+    skipErrorAlert: true,
+  });
+
+  const filename = getFilenameFromContentDisposition(
+    res.headers["content-disposition"],
+    `sales_${year}-${String(month).padStart(2, "0")}.xlsx`,
+  );
+  downloadBlob(res.data, filename);
 };
 
 export type { PortalSale, SaleLine, SaleSource, SaleStatus, ZortoutSaleSyncJob, ReceiptSaleSyncJob } from "./types";
