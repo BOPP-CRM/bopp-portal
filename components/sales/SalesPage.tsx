@@ -234,8 +234,13 @@ export default function SalesPage() {
   const receiptSyncProgress = receiptSyncJob
     ? getReceiptSaleSyncProgress(receiptSyncJob)
     : 0;
-  const showSyncButton = canSync && zortoutConfigured;
-  const showReceiptSyncButton = canSync;
+  const showSyncButton =
+    canSync &&
+    zortoutConfigured &&
+    (missingCount > 0 || isSyncActive || isStartingSync);
+  const showReceiptSyncButton =
+    canSync &&
+    (receiptMissingCount > 0 || isReceiptSyncActive || isStartingReceiptSync);
 
   return (
     <div className="p-4 md:p-8">
@@ -287,7 +292,7 @@ export default function SalesPage() {
               <RefreshCw
                 className={`size-4${isStartingSync || isSyncActive ? " animate-spin" : ""}`}
               />
-              Sync ข้อมูลจาก Zortout
+              Sync จาก Zortout
               {missingCount > 0 ? ` (${formatNumber(missingCount)})` : ""}
             </button>
           ) : null}

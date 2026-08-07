@@ -81,11 +81,6 @@ const MENU_GROUPS: MenuGroup[] = [
         path: "/dashboard/receipts",
       },
       {
-        icon: <ShoppingCart className={iconClassName} />,
-        label: "รายการขาย",
-        path: "/dashboard/sales",
-      },
-      {
         icon: <Ticket className={iconClassName} />,
         label: "จัดการคูปอง",
         path: "/dashboard/coupons",
@@ -94,6 +89,17 @@ const MENU_GROUPS: MenuGroup[] = [
         icon: <QrCode className={iconClassName} />,
         label: "รางวัล QR Code",
         path: "/dashboard/redeem-qrcodes",
+      },
+    ],
+  },
+  {
+    id: "sales",
+    label: "รายการขาย",
+    items: [
+      {
+        icon: <ShoppingCart className={iconClassName} />,
+        label: "รายการขาย",
+        path: "/dashboard/sales",
       },
     ],
   },
