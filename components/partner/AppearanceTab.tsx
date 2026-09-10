@@ -490,7 +490,7 @@ function ThemePreview({ form }: { form: AppearanceForm }) {
         ตัวอย่างหน้าสมาชิก
       </p>
       <div
-        className="mx-auto max-w-sm overflow-hidden rounded-[28px] border border-gray-200 shadow-sm"
+        className="mx-auto max-w-sm overflow-hidden rounded-2xl border border-gray-200 shadow-sm"
         style={{ backgroundColor: surface }}
       >
         {/* Banner */}
@@ -629,13 +629,7 @@ function Field({
   );
 }
 
-function InfoItem({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
+function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
       <dt className="text-sm text-gray-100">{label}</dt>
