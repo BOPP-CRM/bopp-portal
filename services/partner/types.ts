@@ -23,6 +23,48 @@ export type PartnerUi = {
   warranty_enabled?: boolean;
 };
 
+export type AppearanceImageTarget = "logo" | "banner";
+
+export type AppearanceColorKey =
+  | "background_color"
+  | "background_white_color"
+  | "primary_color"
+  | "secondary_color"
+  | "surface_color"
+  | "text_color"
+  | "text_white_color"
+  | "text_gray_color"
+  | "text_success_color"
+  | "text_error_color"
+  | "button_color"
+  | "button_text_color";
+
+// Shape returned by GET/PATCH /api/portal/appearance. Empty values come back
+// as `false` from Odoo.
+export type PartnerAppearance = Record<AppearanceColorKey, string | false> & {
+  logo_url: string | false;
+  banner_url: string | false;
+  welcome_title: string | false;
+  crm_required_phone: boolean;
+  crm_required_email: boolean;
+};
+
+export type UpdatePartnerAppearanceRequest = Partial<
+  Record<AppearanceColorKey, string> & {
+    welcome_title: string;
+    crm_required_phone: boolean;
+    crm_required_email: boolean;
+    logo: string;
+    banner: string;
+  }
+>;
+
+// POST /api/portal/appearance/image response.
+export type UploadAppearanceImageResponse = {
+  url: string;
+  appearance: PartnerAppearance;
+};
+
 export type PartnerAd = {
   id: number;
   title: string;
