@@ -36,6 +36,9 @@ export type PortalTier = {
   point_multiplier_fri?: number;
   point_multiplier_sat?: number;
   point_multiplier_sun?: number;
+  point_multiplier_apply_receipt?: boolean;
+  point_multiplier_apply_zortout?: boolean;
+  point_multiplier_apply_omisell?: boolean;
   min_spending: number;
   max_spending: number;
   is_show_in_ui: boolean;
@@ -72,6 +75,9 @@ export type CreateTierRequest = {
   point_multiplier_fri: number;
   point_multiplier_sat: number;
   point_multiplier_sun: number;
+  point_multiplier_apply_receipt: boolean;
+  point_multiplier_apply_zortout: boolean;
+  point_multiplier_apply_omisell: boolean;
   color: string;
   is_show_in_ui: boolean;
   rewards?: TierRewardInput[];
