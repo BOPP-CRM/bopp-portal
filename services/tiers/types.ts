@@ -29,6 +29,13 @@ export type PortalTier = {
   color: string;
   image_url: string | false;
   convert_points: number;
+  point_multiplier_mon?: number;
+  point_multiplier_tue?: number;
+  point_multiplier_wed?: number;
+  point_multiplier_thu?: number;
+  point_multiplier_fri?: number;
+  point_multiplier_sat?: number;
+  point_multiplier_sun?: number;
   min_spending: number;
   max_spending: number;
   is_show_in_ui: boolean;
@@ -58,6 +65,13 @@ export type CreateTierRequest = {
   min_spending: number;
   max_spending: number;
   convert_points: number;
+  point_multiplier_mon: number;
+  point_multiplier_tue: number;
+  point_multiplier_wed: number;
+  point_multiplier_thu: number;
+  point_multiplier_fri: number;
+  point_multiplier_sat: number;
+  point_multiplier_sun: number;
   color: string;
   is_show_in_ui: boolean;
   rewards?: TierRewardInput[];

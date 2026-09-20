@@ -26,6 +26,19 @@ import { useEffect, useMemo, useState } from "react";
 
 const MODAL_EXIT_MS = 250;
 
+const DAY_MULTIPLIER_FIELDS = [
+  { key: "pointMultiplierMon", apiKey: "point_multiplier_mon", label: "จันทร์" },
+  { key: "pointMultiplierTue", apiKey: "point_multiplier_tue", label: "อังคาร" },
+  { key: "pointMultiplierWed", apiKey: "point_multiplier_wed", label: "พุธ" },
+  { key: "pointMultiplierThu", apiKey: "point_multiplier_thu", label: "พฤหัส" },
+  { key: "pointMultiplierFri", apiKey: "point_multiplier_fri", label: "ศุกร์" },
+  { key: "pointMultiplierSat", apiKey: "point_multiplier_sat", label: "เสาร์" },
+  { key: "pointMultiplierSun", apiKey: "point_multiplier_sun", label: "อาทิตย์" },
+] as const;
+
+type DayMultiplierFormKey = (typeof DAY_MULTIPLIER_FIELDS)[number]["key"];
+type DayMultiplierApiKey = (typeof DAY_MULTIPLIER_FIELDS)[number]["apiKey"];
+
 type TierFormModalProps = {
   tier?: PortalTier | null;
   onClose: () => void;
@@ -40,6 +53,13 @@ type TierFormState = {
   convertPoints: string;
   color: string;
   isShowInUi: boolean;
+  pointMultiplierMon: string;
+  pointMultiplierTue: string;
+  pointMultiplierWed: string;
+  pointMultiplierThu: string;
+  pointMultiplierFri: string;
+  pointMultiplierSat: string;
+  pointMultiplierSun: string;
 };
 
 const emptyForm: TierFormState = {
@@ -50,7 +70,22 @@ const emptyForm: TierFormState = {
   convertPoints: "0",
   color: "#d3966c",
   isShowInUi: true,
+  pointMultiplierMon: "1",
+  pointMultiplierTue: "1",
+  pointMultiplierWed: "1",
+  pointMultiplierThu: "1",
+  pointMultiplierFri: "1",
+  pointMultiplierSat: "1",
+  pointMultiplierSun: "1",
 };
+
+function dayMultiplierValue(
+  tier: PortalTier,
+  apiKey: DayMultiplierApiKey,
+): number {
+  const value = tier[apiKey];
+  return typeof value === "number" && !Number.isNaN(value) ? value : 1;
+}
 
 function toFormState(tier: PortalTier): TierFormState {
   return {
@@ -61,6 +96,34 @@ function toFormState(tier: PortalTier): TierFormState {
     convertPoints: String(tier.convert_points),
     color: tier.color,
     isShowInUi: tier.is_show_in_ui,
+    pointMultiplierMon: String(dayMultiplierValue(tier, "point_multiplier_mon")),
+    pointMultiplierTue: String(dayMultiplierValue(tier, "point_multiplier_tue")),
+    pointMultiplierWed: String(dayMultiplierValue(tier, "point_multiplier_wed")),
+    pointMultiplierThu: String(dayMultiplierValue(tier, "point_multiplier_thu")),
+    pointMultiplierFri: String(dayMultiplierValue(tier, "point_multiplier_fri")),
+    pointMultiplierSat: String(dayMultiplierValue(tier, "point_multiplier_sat")),
+    pointMultiplierSun: String(dayMultiplierValue(tier, "point_multiplier_sun")),
+  };
+}
+
+function buildTierPayload(
+  form: TierFormState,
+): Omit<CreateTierRequest, "rewards"> {
+  return {
+    name: form.name.trim(),
+    code: form.code.trim(),
+    min_spending: Number(form.minSpending),
+    max_spending: Number(form.maxSpending),
+    convert_points: Number(form.convertPoints),
+    point_multiplier_mon: Number(form.pointMultiplierMon),
+    point_multiplier_tue: Number(form.pointMultiplierTue),
+    point_multiplier_wed: Number(form.pointMultiplierWed),
+    point_multiplier_thu: Number(form.pointMultiplierThu),
+    point_multiplier_fri: Number(form.pointMultiplierFri),
+    point_multiplier_sat: Number(form.pointMultiplierSat),
+    point_multiplier_sun: Number(form.pointMultiplierSun),
+    color: form.color,
+    is_show_in_ui: form.isShowInUi,
   };
 }
 
@@ -136,16 +199,7 @@ export default function TierFormModal({
   const hasChanges = useMemo(() => {
     if (!tier) return true;
 
-    const payload: Omit<CreateTierRequest, "rewards"> = {
-      name: form.name.trim(),
-      code: form.code.trim(),
-      min_spending: Number(form.minSpending),
-      max_spending: Number(form.maxSpending),
-      convert_points: Number(form.convertPoints),
-      color: form.color,
-      is_show_in_ui: form.isShowInUi,
-    };
-
+    const payload = buildTierPayload(form);
     const tierChanged =
       Object.keys(buildTierUpdatePayload(tier, payload)).length > 0;
     const rewardsChanged = !rewardInputsEqual(
@@ -206,20 +260,13 @@ export default function TierFormModal({
       return;
     }
 
-    const payload: Omit<CreateTierRequest, "rewards"> = {
-      name: form.name.trim(),
-      code: form.code.trim(),
-      min_spending: Number(form.minSpending),
-      max_spending: Number(form.maxSpending),
-      convert_points: Number(form.convertPoints),
-      color: form.color,
-      is_show_in_ui: form.isShowInUi,
-    };
+    const payload = buildTierPayload(form);
 
     if (
       Number.isNaN(payload.min_spending) ||
       Number.isNaN(payload.max_spending) ||
-      Number.isNaN(payload.convert_points)
+      Number.isNaN(payload.convert_points) ||
+      DAY_MULTIPLIER_FIELDS.some(({ apiKey }) => Number.isNaN(payload[apiKey]))
     ) {
       setError("กรุณาระบุตัวเลขให้ถูกต้อง");
       return;
@@ -227,6 +274,11 @@ export default function TierFormModal({
 
     if (payload.min_spending > payload.max_spending) {
       setError("ยอดใช้จ่ายขั้นต่ำต้องไม่มากกว่ายอดสูงสุด");
+      return;
+    }
+
+    if (DAY_MULTIPLIER_FIELDS.some(({ apiKey }) => payload[apiKey] < 0)) {
+      setError("ตัวคูณ point ในแต่ละวันต้องไม่น้อยกว่า 0");
       return;
     }
 
@@ -384,6 +436,28 @@ export default function TierFormModal({
                   }
                 />
               </Field>
+            </div>
+          </Section>
+
+          <Section title="ตัวคูณ Point รายวัน">
+            <p className="mb-4 text-sm text-gray-100">
+              กำหนดตัวคูณ point ในแต่ละวัน (ค่าเริ่มต้น 1, ต้องไม่น้อยกว่า 0)
+            </p>
+            <div className="grid gap-4 grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+              {DAY_MULTIPLIER_FIELDS.map(({ key, label }) => (
+                <Field key={key} label={label}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form[key]}
+                    onChange={(event) =>
+                      updateField(key as DayMultiplierFormKey, event.target.value)
+                    }
+                    className={inputClassName}
+                  />
+                </Field>
+              ))}
             </div>
           </Section>
 
