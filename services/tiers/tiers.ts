@@ -88,6 +88,8 @@ export const buildTierUpdatePayload = (
   next: Omit<CreateTierRequest, "rewards">,
 ): UpdateTierRequest => {
   const payload: UpdateTierRequest = {};
+  const originalMultiplier = (value: number | undefined) =>
+    typeof value === "number" && !Number.isNaN(value) ? value : 1;
 
   if (next.name !== original.name) payload.name = next.name;
   if (next.code !== original.code) payload.code = next.code;
@@ -100,6 +102,48 @@ export const buildTierUpdatePayload = (
   }
   if (next.convert_points !== original.convert_points) {
     payload.convert_points = next.convert_points;
+  }
+  if (
+    next.point_multiplier_mon !==
+    originalMultiplier(original.point_multiplier_mon)
+  ) {
+    payload.point_multiplier_mon = next.point_multiplier_mon;
+  }
+  if (
+    next.point_multiplier_tue !==
+    originalMultiplier(original.point_multiplier_tue)
+  ) {
+    payload.point_multiplier_tue = next.point_multiplier_tue;
+  }
+  if (
+    next.point_multiplier_wed !==
+    originalMultiplier(original.point_multiplier_wed)
+  ) {
+    payload.point_multiplier_wed = next.point_multiplier_wed;
+  }
+  if (
+    next.point_multiplier_thu !==
+    originalMultiplier(original.point_multiplier_thu)
+  ) {
+    payload.point_multiplier_thu = next.point_multiplier_thu;
+  }
+  if (
+    next.point_multiplier_fri !==
+    originalMultiplier(original.point_multiplier_fri)
+  ) {
+    payload.point_multiplier_fri = next.point_multiplier_fri;
+  }
+  if (
+    next.point_multiplier_sat !==
+    originalMultiplier(original.point_multiplier_sat)
+  ) {
+    payload.point_multiplier_sat = next.point_multiplier_sat;
+  }
+  if (
+    next.point_multiplier_sun !==
+    originalMultiplier(original.point_multiplier_sun)
+  ) {
+    payload.point_multiplier_sun = next.point_multiplier_sun;
   }
   if (next.is_show_in_ui !== original.is_show_in_ui) {
     payload.is_show_in_ui = next.is_show_in_ui;
