@@ -145,6 +145,27 @@ export const buildTierUpdatePayload = (
   ) {
     payload.point_multiplier_sun = next.point_multiplier_sun;
   }
+  if (
+    next.point_multiplier_apply_receipt !==
+    (original.point_multiplier_apply_receipt ?? true)
+  ) {
+    payload.point_multiplier_apply_receipt =
+      next.point_multiplier_apply_receipt;
+  }
+  if (
+    next.point_multiplier_apply_zortout !==
+    (original.point_multiplier_apply_zortout ?? true)
+  ) {
+    payload.point_multiplier_apply_zortout =
+      next.point_multiplier_apply_zortout;
+  }
+  if (
+    next.point_multiplier_apply_omisell !==
+    (original.point_multiplier_apply_omisell ?? true)
+  ) {
+    payload.point_multiplier_apply_omisell =
+      next.point_multiplier_apply_omisell;
+  }
   if (next.is_show_in_ui !== original.is_show_in_ui) {
     payload.is_show_in_ui = next.is_show_in_ui;
   }

@@ -15,13 +15,24 @@ import {
   fetchImageAsOcrFile,
   type ReceiptOcrItem,
 } from "@/services/receipts/ocr";
+import { getTier } from "@/services/tiers/tiers";
+import type { PortalTier } from "@/services/tiers/types";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber, formatReviewedBy } from "@/utils/format";
 import { getProxiedImageUrl } from "@/utils/image";
+import {
+  appliesDayPointMultiplier,
+  calcRewardPoints,
+  getDayPointMultiplier,
+  getEffectiveConvertPoints,
+  getThaiWeekdayLabel,
+} from "@/utils/tier-points";
 import { Check, ExternalLink, ScanLine, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+
+export { calcRewardPoints } from "@/utils/tier-points";
 
 const MODAL_EXIT_MS = 250;
 
@@ -34,17 +45,13 @@ type ReceiptDetailModalProps = {
 const inputClassName =
   "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
 
-export function calcRewardPoints(amount: number, convertPoints: number) {
-  if (!convertPoints || amount <= 0) return 0;
-  return Math.floor(amount / convertPoints);
-}
-
 export default function ReceiptDetailModal({
   receiptId,
   onClose,
   onSuccess,
 }: ReceiptDetailModalProps) {
   const [receipt, setReceipt] = useState<PortalReceipt | null>(null);
+  const [tierDetail, setTierDetail] = useState<PortalTier | null>(null);
   const [receiptNumber, setReceiptNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -63,6 +70,7 @@ export default function ReceiptDetailModal({
   const loadReceipt = async () => {
     setLoading(true);
     setError(null);
+    setTierDetail(null);
     setOcrReceiptNumber(null);
     setOcrDate(null);
     setOcrItems([]);
@@ -73,6 +81,15 @@ export default function ReceiptDetailModal({
       setReceipt(data);
       setReceiptNumber(data.receipt_number || "");
       setAmount(String(data.amount || ""));
+
+      if (data.tier?.id) {
+        try {
+          const tier = await getTier(data.tier.id);
+          setTierDetail(tier);
+        } catch {
+          setTierDetail(null);
+        }
+      }
     } catch (loadError) {
       setError(handleError(loadError).message);
       setReceipt(null);
@@ -117,15 +134,28 @@ export default function ReceiptDetailModal({
 
   const isPending = receipt?.state === "pending";
   const amountNumber = Number(amount);
-  const convertPoints =
+  const baseConvertPoints =
     receipt?.tier.convert_points ?? receipt?.tier_convert_points ?? 0;
+  const receiptMultiplierEnabled = appliesDayPointMultiplier(
+    tierDetail,
+    "receipt",
+  );
+  const configuredDayMultiplier = getDayPointMultiplier(tierDetail);
+  const dayMultiplier = receiptMultiplierEnabled
+    ? configuredDayMultiplier
+    : 1;
+  const dayLabel = getThaiWeekdayLabel();
+  const effectiveConvertPoints = getEffectiveConvertPoints(
+    baseConvertPoints,
+    dayMultiplier,
+  );
   const previewRewardPoints = useMemo(
     () =>
       calcRewardPoints(
         Number.isNaN(amountNumber) ? 0 : amountNumber,
-        convertPoints,
+        effectiveConvertPoints,
       ),
-    [amountNumber, convertPoints],
+    [amountNumber, effectiveConvertPoints],
   );
 
   const closeModal = () => {
@@ -467,8 +497,18 @@ export default function ReceiptDetailModal({
                 <DetailItem label="ระดับสมาชิก" value={receipt.tier.name} />
                 <DetailItem
                   label="อัตราแปลง Point"
-                  value={`${formatNumber(convertPoints)} บาท / 1 Point`}
+                  value={`${formatNumber(baseConvertPoints)} บาท / 1 Point`}
                 />
+                {tierDetail ? (
+                  <DetailItem
+                    label={`ตัวคูณวันนี้ (${dayLabel})`}
+                    value={
+                      receiptMultiplierEnabled
+                        ? `x${formatNumber(configuredDayMultiplier)}`
+                        : `x${formatNumber(configuredDayMultiplier)} (ไม่ใช้กับใบเสร็จ)`
+                    }
+                  />
+                ) : null}
                 {receipt.reviewed_by ? (
                   <DetailItem
                     label="ตรวจสอบโดย"
@@ -511,8 +551,9 @@ export default function ReceiptDetailModal({
                   </Field>
                 </div>
                 <p className="mt-3 text-xs text-gray-100">
-                  ระบบจะสร้าง Spending point และ Reward point = floor(มูลค่า ÷{" "}
-                  {formatNumber(convertPoints)}) เมื่ออนุมัติ
+                  {dayMultiplier !== 1
+                    ? `ระบบจะสร้าง Spending point และ Reward point = floor(มูลค่า × ${formatNumber(dayMultiplier)} ÷ ${formatNumber(baseConvertPoints)}) เมื่ออนุมัติ`
+                    : `ระบบจะสร้าง Spending point และ Reward point = floor(มูลค่า ÷ ${formatNumber(baseConvertPoints)}) เมื่ออนุมัติ`}
                 </p>
               </Section>
             ) : (

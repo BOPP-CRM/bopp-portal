@@ -60,6 +60,9 @@ type TierFormState = {
   pointMultiplierFri: string;
   pointMultiplierSat: string;
   pointMultiplierSun: string;
+  applyMultiplierReceipt: boolean;
+  applyMultiplierZortout: boolean;
+  applyMultiplierOmisell: boolean;
 };
 
 const emptyForm: TierFormState = {
@@ -77,6 +80,9 @@ const emptyForm: TierFormState = {
   pointMultiplierFri: "1",
   pointMultiplierSat: "1",
   pointMultiplierSun: "1",
+  applyMultiplierReceipt: true,
+  applyMultiplierZortout: true,
+  applyMultiplierOmisell: true,
 };
 
 function dayMultiplierValue(
@@ -85,6 +91,12 @@ function dayMultiplierValue(
 ): number {
   const value = tier[apiKey];
   return typeof value === "number" && !Number.isNaN(value) ? value : 1;
+}
+
+function channelApplyValue(
+  value: boolean | undefined,
+): boolean {
+  return value ?? true;
 }
 
 function toFormState(tier: PortalTier): TierFormState {
@@ -103,6 +115,15 @@ function toFormState(tier: PortalTier): TierFormState {
     pointMultiplierFri: String(dayMultiplierValue(tier, "point_multiplier_fri")),
     pointMultiplierSat: String(dayMultiplierValue(tier, "point_multiplier_sat")),
     pointMultiplierSun: String(dayMultiplierValue(tier, "point_multiplier_sun")),
+    applyMultiplierReceipt: channelApplyValue(
+      tier.point_multiplier_apply_receipt,
+    ),
+    applyMultiplierZortout: channelApplyValue(
+      tier.point_multiplier_apply_zortout,
+    ),
+    applyMultiplierOmisell: channelApplyValue(
+      tier.point_multiplier_apply_omisell,
+    ),
   };
 }
 
@@ -122,6 +143,9 @@ function buildTierPayload(
     point_multiplier_fri: Number(form.pointMultiplierFri),
     point_multiplier_sat: Number(form.pointMultiplierSat),
     point_multiplier_sun: Number(form.pointMultiplierSun),
+    point_multiplier_apply_receipt: form.applyMultiplierReceipt,
+    point_multiplier_apply_zortout: form.applyMultiplierZortout,
+    point_multiplier_apply_omisell: form.applyMultiplierOmisell,
     color: form.color,
     is_show_in_ui: form.isShowInUi,
   };
@@ -458,6 +482,43 @@ export default function TierFormModal({
                   />
                 </Field>
               ))}
+            </div>
+            <div className="mt-5">
+              <p className="mb-3 text-sm text-gray-100">
+                ใช้ตัวคูณกับช่องทางที่เลือก
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-4">
+                <label className="flex items-center gap-2 text-sm text-defualt-text">
+                  <input
+                    type="checkbox"
+                    checked={form.applyMultiplierReceipt}
+                    onChange={(event) =>
+                      updateField("applyMultiplierReceipt", event.target.checked)
+                    }
+                  />
+                  ใบเสร็จ
+                </label>
+                <label className="flex items-center gap-2 text-sm text-defualt-text">
+                  <input
+                    type="checkbox"
+                    checked={form.applyMultiplierZortout}
+                    onChange={(event) =>
+                      updateField("applyMultiplierZortout", event.target.checked)
+                    }
+                  />
+                  Zortout
+                </label>
+                <label className="flex items-center gap-2 text-sm text-defualt-text">
+                  <input
+                    type="checkbox"
+                    checked={form.applyMultiplierOmisell}
+                    onChange={(event) =>
+                      updateField("applyMultiplierOmisell", event.target.checked)
+                    }
+                  />
+                  Omisell
+                </label>
+              </div>
             </div>
           </Section>
 
