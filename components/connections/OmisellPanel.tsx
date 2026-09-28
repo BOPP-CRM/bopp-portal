@@ -7,23 +7,30 @@ import {
   regenerateOmisellSecret,
 } from "@/services/omisell/omisell";
 import type { OmisellStatus } from "@/services/omisell/types";
+import { getLazadaStatus } from "@/services/lazada/lazada";
+import type { LazadaStatus } from "@/services/lazada/types";
 import { ActionButton, CopyField } from "@/components/connections/shared";
 import OmisellWebhookLogs from "@/components/connections/OmisellWebhookLogs";
 import dialog from "@/components/util/dialog";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { handleError } from "@/utils/errors";
-import { Info, RefreshCw } from "lucide-react";
+import { AlertTriangle, Info, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 const COUNTRY_OPTIONS = [{ value: "TH", label: "TH - Thailand" }];
 
-export default function OmisellPanel() {
+export default function OmisellPanel({
+  onSwitchToLazada,
+}: {
+  onSwitchToLazada: () => void;
+}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
   const [status, setStatus] = useState<OmisellStatus | null>(null);
+  const [lazadaStatus, setLazadaStatus] = useState<LazadaStatus | null>(null);
 
   // Form state
   const [apiKey, setApiKey] = useState("");
@@ -34,10 +41,13 @@ export default function OmisellPanel() {
   const loadStatus = useCallback(async () => {
     setError(null);
     try {
-      const response = await getOmisellStatus();
-      const s = response.omisell;
+      const [omisellRes, lazadaRes] = await Promise.all([
+        getOmisellStatus(),
+        getLazadaStatus(),
+      ]);
+      const s = omisellRes.omisell;
       setStatus(s);
-      // Pre-fill form with existing values
+      setLazadaStatus(lazadaRes.lazada);
       if (s.api_key) setApiKey(s.api_key);
       if (s.api_secret) setApiSecret(s.api_secret);
       if (s.seller_id) setSellerId(s.seller_id);
@@ -171,6 +181,7 @@ export default function OmisellPanel() {
   }
 
   const isEnabled = status.configured && status.enabled;
+  const platformBlocking = lazadaStatus?.enabled === true;
 
   return (
     <div className="space-y-6 p-6">
@@ -194,7 +205,7 @@ export default function OmisellPanel() {
           </div>
         </div>
 
-        {isEnabled && !isEditing && (
+        {isEnabled && !isEditing && !platformBlocking && (
           <div className="flex shrink-0 flex-wrap gap-2">
             <ActionButton
               disabled={isSubmitting}
@@ -219,6 +230,28 @@ export default function OmisellPanel() {
         )}
       </div>
 
+      {platformBlocking && (
+        <div className="flex items-start gap-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-4">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-yellow-600" />
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-yellow-800">
+              มี Platform อื่นเปิดอยู่
+            </p>
+            <p className="mt-1 text-sm text-yellow-700">
+              ไม่สามารถเปิด Omisell ได้ขณะที่มี platform อื่น (เช่น Lazada)
+              กำลังทำงานอยู่ กรุณาปิด platform นั้นก่อน
+            </p>
+            <button
+              type="button"
+              onClick={onSwitchToLazada}
+              className="mt-2 text-sm font-medium text-yellow-800 underline hover:text-yellow-900"
+            >
+              ไปปิด Lazada
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Step 1: Configuration form */}
       <section className="space-y-4">
         <h3 className="text-sm font-semibold text-defualt-text">
@@ -236,7 +269,7 @@ export default function OmisellPanel() {
               value={apiKey}
               onChange={setApiKey}
               placeholder="กรอก API Key"
-              disabled={isEnabled && !isEditing}
+              disabled={(isEnabled && !isEditing) || platformBlocking}
             />
             <FormField
               label="Omisell API Secret"
@@ -244,7 +277,7 @@ export default function OmisellPanel() {
               value={apiSecret}
               onChange={setApiSecret}
               placeholder="กรอก API Secret"
-              disabled={isEnabled && !isEditing}
+              disabled={(isEnabled && !isEditing) || platformBlocking}
             />
             <FormField
               label="Omisell Seller ID"
@@ -252,18 +285,18 @@ export default function OmisellPanel() {
               value={sellerId}
               onChange={setSellerId}
               placeholder="กรอก Seller ID"
-              disabled={isEnabled && !isEditing}
+              disabled={(isEnabled && !isEditing) || platformBlocking}
             />
             <CountrySelect
               label="Omisell Country"
               required
               value={country}
               onChange={setCountry}
-              disabled={isEnabled && !isEditing}
+              disabled={(isEnabled && !isEditing) || platformBlocking}
             />
           </div>
 
-          {(!isEnabled || isEditing) && (
+          {(!isEnabled || isEditing) && !platformBlocking && (
             <div className="mt-5 flex flex-wrap gap-2">
               <ActionButton
                 disabled={isSubmitting}
