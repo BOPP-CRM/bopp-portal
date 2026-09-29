@@ -1,5 +1,6 @@
 "use client";
 
+import AppearanceTab from "@/components/partner/AppearanceTab";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { getPartner } from "@/services/partner/partner";
 import type { PartnerAd, PartnerDetail, PartnerUi } from "@/services/partner/types";
@@ -63,7 +64,7 @@ export default function PartnerPage() {
           ข้อมูล Partner
         </h1>
         <p className="mt-1 text-sm text-gray-100">
-          ดูข้อมูลการตั้งค่าระบบ โปรดติดต่อทีมงานหากต้องการแก้ไขข้อมูล
+          ดูข้อมูลการตั้งค่าระบบ และปรับแต่งธีม UI ของ portal สมาชิก
         </p>
       </div>
 
@@ -92,7 +93,7 @@ export default function PartnerPage() {
         ) : partner ? (
           <>
             {tab === "general" ? <GeneralTab partner={partner} /> : null}
-            {tab === "ui" ? <UiTab ui={partner.ui} /> : null}
+            {tab === "ui" ? <AppearanceTab ui={partner.ui} /> : null}
             {tab === "line" ? <LineTab line={partner.line} /> : null}
             {tab === "ads" ? <AdsTab ads={partner.ads} /> : null}
             {tab === "tiers" ? <TiersTab tiers={partner.tier} /> : null}
@@ -178,61 +179,6 @@ function GeneralTab({ partner }: { partner: PartnerDetail }) {
           </div>
         </section>
       ) : null}
-    </div>
-  );
-}
-
-function UiTab({ ui }: { ui: PartnerUi }) {
-  return (
-    <div className="p-6 space-y-6">
-      {ui.banner ? (
-        <div>
-          <p className="mb-2 text-sm text-gray-100">แบนเนอร์</p>
-          <img
-            src={getProxiedImageUrl(ui.banner) ?? undefined}
-            alt="Partner banner"
-            className="max-h-48 w-full rounded-2xl border border-gray-200 object-cover"
-          />
-        </div>
-      ) : null}
-
-      <dl className="grid gap-4 sm:grid-cols-2">
-        <InfoItem label="ข้อความต้อนรับ" value={ui.welcome_title} />
-        <InfoItem
-          label="บังคับกรอกเบอร์โทร"
-          value={<BooleanBadge value={ui.crm_required_phone} />}
-        />
-        <InfoItem
-          label="บังคับกรอกอีเมล"
-          value={<BooleanBadge value={ui.crm_required_email} />}
-        />
-        <InfoItem
-          label="Custom Fields"
-          value={<BooleanBadge value={Boolean(ui.ui_custom_fields)} />}
-        />
-        <InfoItem
-          label="ระบบรับประกันสินค้า"
-          value={<BooleanBadge value={Boolean(ui.warranty_enabled)} />}
-        />
-      </dl>
-
-      <div>
-        <p className="mb-3 text-sm font-medium text-defualt-text">สีธีม</p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <ColorItem label="พื้นหลัง" value={ui.background_color} />
-          <ColorItem label="พื้นหลัง (ขาว)" value={ui.background_white_color} />
-          <ColorItem label="Primary" value={ui.primary_color} />
-          <ColorItem label="Secondary" value={ui.secondary_color} />
-          <ColorItem label="Surface" value={ui.surface_color} />
-          <ColorItem label="ข้อความ" value={ui.text_color} />
-          <ColorItem label="ข้อความ (ขาว)" value={ui.text_white_color} />
-          <ColorItem label="ข้อความ (เทา)" value={ui.text_gray_color} />
-          <ColorItem label="ข้อความ (สำเร็จ)" value={ui.text_success_color} />
-          <ColorItem label="ข้อความ (ผิดพลาด)" value={ui.text_error_color} />
-          <ColorItem label="ปุ่ม" value={ui.button_color} />
-          <ColorItem label="ข้อความปุ่ม" value={ui.button_text_color} />
-        </div>
-      </div>
     </div>
   );
 }
@@ -372,35 +318,6 @@ function InfoItem({
         {value}
       </dd>
     </div>
-  );
-}
-
-function ColorItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3">
-      <span
-        className="size-8 shrink-0 rounded-lg border border-gray-200"
-        style={{ backgroundColor: value }}
-      />
-      <div className="min-w-0">
-        <p className="text-sm text-gray-100">{label}</p>
-        <p className="text-sm font-medium text-defualt-text">{value}</p>
-      </div>
-    </div>
-  );
-}
-
-function BooleanBadge({ value }: { value: boolean }) {
-  return (
-    <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
-        value
-          ? "bg-brown-yellow-5 text-brown-100"
-          : "bg-gray-10 text-gray-100"
-      }`}
-    >
-      {value ? "เปิด" : "ปิด"}
-    </span>
   );
 }
 
