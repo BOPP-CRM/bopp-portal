@@ -1,18 +1,20 @@
 "use client";
 
 import BoppMcpPanel from "@/components/connections/BoppMcpPanel";
+import LazadaPanel from "@/components/connections/LazadaPanel";
 import OpenAiPanel from "@/components/connections/OpenAiPanel";
 import ZortoutPanel from "@/components/connections/ZortoutPanel";
 import OmisellPanel from "./OmisellPanel";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-type Tab = "bopp-mcp" | "zortout" | "omisell" | "openai";
+type Tab = "bopp-mcp" | "zortout" | "omisell" | "lazada" | "openai";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "bopp-mcp", label: "BOPP MCP" },
   { id: "zortout", label: "Zortout" },
   { id: "omisell", label: "Omisell" },
+  { id: "lazada", label: "Lazada" },
   { id: "openai", label: "OpenAI" },
 ];
 
@@ -23,6 +25,7 @@ function isTab(value: string | null): value is Tab {
     value === "bopp-mcp" ||
     value === "zortout" ||
     value === "omisell" ||
+    value === "lazada" ||
     value === "openai"
   );
 }
@@ -81,7 +84,8 @@ export default function ConnectionsPage() {
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {tab === "bopp-mcp" ? <BoppMcpPanel /> : null}
         {tab === "zortout" ? <ZortoutPanel /> : null}
-        {tab === "omisell" ? <OmisellPanel /> : null}
+        {tab === "omisell" ? <OmisellPanel onSwitchToLazada={() => selectTab("lazada")} /> : null}
+        {tab === "lazada" ? <LazadaPanel onSwitchToOmisell={() => selectTab("omisell")} /> : null}
         {tab === "openai" ? <OpenAiPanel /> : null}
       </div>
     </div>
