@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   Building2,
+  Gift,
   LayoutDashboard,
   Menu as MenuIcon,
   Package,
@@ -84,6 +85,11 @@ const MENU_GROUPS: MenuGroup[] = [
         icon: <Ticket className={iconClassName} />,
         label: "จัดการคูปอง",
         path: "/dashboard/coupons",
+      },
+      {
+        icon: <Gift className={iconClassName} />,
+        label: "แจกคูปองตามเงื่อนไข",
+        path: "/dashboard/coupon-distribution",
       },
       {
         icon: <QrCode className={iconClassName} />,
