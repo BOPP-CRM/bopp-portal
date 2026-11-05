@@ -57,7 +57,7 @@ const COUPON_STATUS_COLORS = {
 };
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 const chartMargin = { top: 8, right: 12, left: 0, bottom: 0 };
 
@@ -258,7 +258,7 @@ function DashboardLoadError({
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 cursor-pointer rounded-4xl bg-brown-100 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+        className="mt-4 cursor-pointer rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
       >
         ลองโหลดอีกครั้ง
       </button>
@@ -405,8 +405,8 @@ export default function DashboardPage() {
   const pointsCurrencyName = data?.points.currency.name ?? "Point";
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
+    <div className="p-3 md:p-5">
+      <div className="mb-4">
         <h1 className="text-2xl font-semibold text-defualt-text">แดชบอร์ด</h1>
         <p className="mt-1 text-sm text-gray-100">
           ภาพรวมสมาชิก ใบเสร็จ คูปอง และ Point
@@ -441,7 +441,7 @@ export default function DashboardPage() {
       </div>
 
       {error ? (
-        <div className="mb-6 rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
+        <div className="mb-6 rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}

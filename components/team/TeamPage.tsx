@@ -5,6 +5,7 @@ import CreateTeamUserModal from "@/components/team/CreateTeamUserModal";
 import EditTeamUserModal from "@/components/team/EditTeamUserModal";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import ActionMenu from "@/components/util/ActionMenu";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   cancelTeamInvite,
@@ -25,7 +26,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -64,7 +65,10 @@ export default function TeamPage() {
     return undefined;
   }, [activeFilter]);
 
+  const loadRequestId = useRef(0);
+
   const loadData = useCallback(async () => {
+    const requestId = ++loadRequestId.current;
     setError(null);
     setLoading(true);
 
@@ -76,6 +80,7 @@ export default function TeamPage() {
           limit: PAGE_SIZE,
           offset,
         });
+        if (requestId !== loadRequestId.current) return;
         setTeamUsers(data.teamUsers);
         setTotal(data.total);
       } else {
@@ -84,16 +89,18 @@ export default function TeamPage() {
           limit: PAGE_SIZE,
           offset,
         });
+        if (requestId !== loadRequestId.current) return;
         setInvites(data.invites);
         setTotal(data.total);
       }
     } catch (loadError) {
+      if (requestId !== loadRequestId.current) return;
       setError(handleError(loadError).message);
       setTeamUsers([]);
       setInvites([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [activeParam, inviteStateFilter, offset, search, tab]);
 
@@ -173,8 +180,8 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             จัดการทีม Portal
@@ -188,7 +195,7 @@ export default function TeamPage() {
           <button
             type="button"
             onClick={() => setShowCreateInvite(true)}
-            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl border border-brown-100 px-5 py-2.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5"
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl border border-brown-100 px-3.5 py-1.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5"
           >
             <Link2 className="size-4" />
             เชิญด้วยลิงก์
@@ -197,13 +204,13 @@ export default function TeamPage() {
       </div>
 
       {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
 
       {copyMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {copyMessage}
         </div>
       ) : null}
@@ -247,7 +254,7 @@ export default function TeamPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาชื่อ, อีเมล..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
             />
           </form>
         ) : null}
@@ -322,7 +329,7 @@ function UsersTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
           <tr>
             <th className="px-4 py-4 font-medium">ชื่อ</th>
@@ -348,7 +355,7 @@ function UsersTable({
               </td>
               <td className="px-4 py-4">
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                     user.active
                       ? "bg-brown-yellow-5 text-brown-100"
                       : "bg-gray-10 text-gray-100"
@@ -383,7 +390,7 @@ function InvitesTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
           <tr>
             <th className="px-4 py-4 font-medium">ชื่อ / อีเมล</th>
@@ -404,7 +411,7 @@ function InvitesTable({
                 <p className="text-xs text-gray-100">{invite.email}</p>
               </td>
               <td className="px-4 py-4">
-                <span className="rounded-full bg-gray-10 px-3 py-1 text-xs font-medium text-defualt-text">
+                <span className="rounded-full bg-gray-10 px-2 py-0.5 text-[11px] font-medium text-defualt-text">
                   {inviteStateLabel[invite.state]}
                 </span>
               </td>

@@ -88,7 +88,7 @@ export default function LoginForm() {
                 value={domain}
                 onChange={(event) => setDomain(event.target.value)}
                 placeholder="my-partner"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-defualt-text outline-none transition focus:border-brown-100"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-defualt-text outline-none transition focus:border-brown-100"
               />
             </div>
 
@@ -107,7 +107,7 @@ export default function LoginForm() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="name@company.com"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-defualt-text outline-none transition focus:border-brown-100"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-defualt-text outline-none transition focus:border-brown-100"
               />
             </div>
 
@@ -126,7 +126,7 @@ export default function LoginForm() {
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-defualt-text outline-none transition focus:border-brown-100"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-defualt-text outline-none transition focus:border-brown-100"
               />
             </div>
           </div>
@@ -136,7 +136,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="mt-6 w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-6 w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
           </button>

@@ -5,7 +5,7 @@ import AiSyncConfirmDialog, {
 } from "@/components/sales/AiSyncConfirmDialog";
 import SalesExportModal from "@/components/sales/SalesExportModal";
 import MemberAvatar from "@/components/members/MemberAvatar";
-import SaleDetailModal, { StatusBadge } from "@/components/sales/SaleDetailModal";
+import { StatusBadge } from "@/components/sales/SaleDetailModal";
 import SourceBadge from "@/components/sales/SourceBadge";
 import {
   getReceiptSaleSyncProgress,
@@ -16,6 +16,7 @@ import {
   useZortoutSaleSyncJob,
 } from "@/components/sales/useZortoutSaleSyncJob";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { useApp } from "@/providers/app-provider";
 import {
@@ -44,7 +45,8 @@ import {
   Search,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
 const OPENAI_LOGO = "/openai.png";
@@ -54,6 +56,7 @@ type SourceFilter = SaleSource | "all";
 
 export default function SalesPage() {
   const { me } = useApp();
+  const router = useRouter();
   const [sales, setSales] = useState<PortalSale[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -63,7 +66,6 @@ export default function SalesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSaleId, setSelectedSaleId] = useState<number | null>(null);
   const [missingCount, setMissingCount] = useState(0);
   const [receiptMissingCount, setReceiptMissingCount] = useState(0);
   const [zortoutConfigured, setZortoutConfigured] = useState(false);
@@ -107,7 +109,10 @@ export default function SalesPage() {
     }
   }, [canSync]);
 
+  const loadRequestId = useRef(0);
+
   const loadSales = useCallback(async () => {
+    const requestId = ++loadRequestId.current;
     setError(null);
     setLoading(true);
 
@@ -119,14 +124,16 @@ export default function SalesPage() {
         limit: PAGE_SIZE,
         offset,
       });
+      if (requestId !== loadRequestId.current) return;
       setSales(data.sales);
       setTotal(data.total);
     } catch (loadError) {
+      if (requestId !== loadRequestId.current) return;
       setError(handleError(loadError).message);
       setSales([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [offset, search, sourceParam, statusParam]);
 
@@ -263,8 +270,8 @@ export default function SalesPage() {
     (receiptMissingCount > 0 || isReceiptSyncActive || isStartingReceiptSync);
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             รายการขาย
@@ -279,7 +286,7 @@ export default function SalesPage() {
             <button
               type="button"
               onClick={() => setShowExportModal(true)}
-              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text transition hover:bg-gray-10"
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-defualt-text transition hover:bg-gray-10"
             >
               <Download className="size-4" />
               Export Excel
@@ -295,7 +302,7 @@ export default function SalesPage() {
                 isReceiptSyncActive ||
                 receiptMissingCount <= 0
               }
-              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-defualt-text transition hover:bg-gray-10 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isStartingReceiptSync || isReceiptSyncActive ? (
                 <RefreshCw className="size-4 animate-spin" />
@@ -318,7 +325,7 @@ export default function SalesPage() {
               type="button"
               onClick={() => void handleStartSync()}
               disabled={isStartingSync || isSyncActive || missingCount <= 0}
-              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
                 className={`size-4${isStartingSync || isSyncActive ? " animate-spin" : ""}`}
@@ -335,7 +342,7 @@ export default function SalesPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาเลขออเดอร์, ชื่อลูกค้า..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
             />
           </form>
         </div>
@@ -344,14 +351,14 @@ export default function SalesPage() {
       {showReceiptSyncButton &&
       receiptMissingCount > 0 &&
       !isReceiptSyncActive ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           มีใบเสร็จที่อนุมัติแล้ว {formatNumber(receiptMissingCount)} รายการ
           ที่ยังไม่ได้ sync เป็นรายการขาย
         </div>
       ) : null}
 
       {showSyncButton && missingCount > 0 && !isSyncActive ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           มีออเดอร์ Zortout ที่ชำระแล้ว {formatNumber(missingCount)} รายการ
           ที่ยังไม่ได้ sync เป็นรายการขาย
         </div>
@@ -444,7 +451,7 @@ export default function SalesPage() {
       ) : null}
 
       {syncMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {syncMessage}
         </div>
       ) : null}
@@ -480,13 +487,13 @@ export default function SalesPage() {
                 <SaleCard
                   key={sale.id}
                   sale={sale}
-                  onOpen={() => setSelectedSaleId(sale.id)}
+                  onOpen={() => router.push(`/dashboard/sales/${sale.id}`)}
                 />
               ))}
             </div>
 
             <div className="hidden overflow-x-auto lg:block">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <table className={`w-full min-w-[860px] text-left ${compactTableClassName}`}>
                 <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                   <tr>
                     <th className="px-4 py-4 font-medium">เลขออเดอร์</th>
@@ -508,7 +515,7 @@ export default function SalesPage() {
                   {sales.map((sale) => (
                     <tr
                       key={sale.id}
-                      onClick={() => setSelectedSaleId(sale.id)}
+                      onClick={() => router.push(`/dashboard/sales/${sale.id}`)}
                       className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                     >
                       <td className="max-w-[160px] truncate px-4 py-4 font-medium text-defualt-text">
@@ -578,15 +585,6 @@ export default function SalesPage() {
         ) : null}
       </div>
 
-      {selectedSaleId ? (
-        <SaleDetailModal
-          saleId={selectedSaleId}
-          openAiConfigured={openAiConfigured}
-          onClose={() => setSelectedSaleId(null)}
-          onUpdated={() => void loadSales()}
-        />
-      ) : null}
-
       <AiSyncConfirmDialog
         open={showReceiptAiConfirm}
         onClose={() => setShowReceiptAiConfirm(false)}
@@ -611,11 +609,11 @@ export default function SalesPage() {
 
 function MemberCell({ user }: { user: SaleMember }) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className="flex min-w-0 items-center gap-2">
       <MemberAvatar
         name={user.display_name}
         pictureUrl={user.picture_url}
-        size="sm"
+        size="xs"
       />
       <div className="min-w-0">
         <Link
@@ -651,7 +649,7 @@ function SaleCard({
           onOpen();
         }
       }}
-      className="cursor-pointer space-y-4 p-4 transition-colors hover:bg-gray-10"
+      className="cursor-pointer space-y-2.5 p-3 text-sm transition-colors hover:bg-gray-10"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

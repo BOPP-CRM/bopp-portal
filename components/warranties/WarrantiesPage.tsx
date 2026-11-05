@@ -1,9 +1,9 @@
 "use client";
 
 import StatusBadge from "@/components/warranties/StatusBadge";
-import WarrantyDetailModal from "@/components/warranties/WarrantyDetailModal";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   getWarranties,
@@ -20,13 +20,15 @@ import {
   Settings,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
 
 type StatusFilter = number | "all";
 
 export default function WarrantiesPage() {
+  const router = useRouter();
   const [warranties, setWarranties] = useState<PortalWarranty[]>([]);
   const [statuses, setStatuses] = useState<WarrantyStatus[]>([]);
   const [total, setTotal] = useState(0);
@@ -36,10 +38,6 @@ export default function WarrantiesPage() {
   const [searchInput, setSearchInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedWarrantyId, setSelectedWarrantyId] = useState<number | null>(
-    null,
-  );
 
   const statusParam = useMemo(
     () => (statusFilter === "all" ? undefined : statusFilter),
@@ -55,7 +53,10 @@ export default function WarrantiesPage() {
     }
   }, []);
 
+  const loadRequestId = useRef(0);
+
   const loadWarranties = useCallback(async () => {
+    const requestId = ++loadRequestId.current;
     setError(null);
     setLoading(true);
 
@@ -66,14 +67,16 @@ export default function WarrantiesPage() {
         limit: PAGE_SIZE,
         offset,
       });
+      if (requestId !== loadRequestId.current) return;
       setWarranties(data.warranties);
       setTotal(data.total);
     } catch (loadError) {
+      if (requestId !== loadRequestId.current) return;
       setError(handleError(loadError).message);
       setWarranties([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [offset, search, statusParam]);
 
@@ -99,12 +102,6 @@ export default function WarrantiesPage() {
     setSearch(searchInput.trim());
   };
 
-  const handleSuccess = async () => {
-    setSuccessMessage("บันทึกข้อมูลสำเร็จ");
-    await loadWarranties();
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
-
   const statusTabs: { value: StatusFilter; label: string }[] = [
     ...statuses.map((status) => ({
       value: status.id as StatusFilter,
@@ -114,8 +111,8 @@ export default function WarrantiesPage() {
   ];
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             ลงทะเบียนรับประกันสินค้า
@@ -133,25 +130,19 @@ export default function WarrantiesPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหา Serial, เลขใบเสร็จ, ชื่อสมาชิก..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
             />
           </form>
 
           <Link
             href="/dashboard/warranties/config"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-brown-100 px-4 py-3 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-brown-100 px-3 py-2 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5"
           >
             <Settings className="size-4" />
             ตั้งค่า
           </Link>
         </div>
       </div>
-
-      {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
-          {successMessage}
-        </div>
-      ) : null}
 
       <FilterBar>
         <FilterGroup
@@ -180,13 +171,13 @@ export default function WarrantiesPage() {
                 <WarrantyCard
                   key={warranty.id}
                   warranty={warranty}
-                  onOpen={() => setSelectedWarrantyId(warranty.id)}
+                  onOpen={() => router.push(`/dashboard/warranties/${warranty.id}`)}
                 />
               ))}
             </div>
 
             <div className="hidden overflow-x-auto lg:block">
-              <table className="w-full min-w-[960px] text-left text-sm">
+              <table className={`w-full min-w-[920px] text-left ${compactTableClassName}`}>
                 <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                   <tr>
                     <th className="px-4 py-4 font-medium">Serial Number</th>
@@ -207,7 +198,7 @@ export default function WarrantiesPage() {
                   {warranties.map((warranty) => (
                     <tr
                       key={warranty.id}
-                      onClick={() => setSelectedWarrantyId(warranty.id)}
+                      onClick={() => router.push(`/dashboard/warranties/${warranty.id}`)}
                       className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                     >
                       <td className="px-4 py-4 font-medium text-defualt-text">
@@ -272,21 +263,13 @@ export default function WarrantiesPage() {
           </div>
         ) : null}
       </div>
-
-      {selectedWarrantyId ? (
-        <WarrantyDetailModal
-          warrantyId={selectedWarrantyId}
-          onClose={() => setSelectedWarrantyId(null)}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
     </div>
   );
 }
 
 function MemberCell({ user }: { user: PortalWarranty["user"] }) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className="flex min-w-0 items-center gap-2">
       <MemberAvatar
         name={user.display_name}
         pictureUrl={user.picture_url}
@@ -326,7 +309,7 @@ function WarrantyCard({
           onOpen();
         }
       }}
-      className="cursor-pointer space-y-4 p-4 transition-colors hover:bg-gray-10"
+      className="cursor-pointer space-y-2.5 p-3 text-sm transition-colors hover:bg-gray-10"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">

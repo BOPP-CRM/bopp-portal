@@ -19,7 +19,7 @@ export type RewardFormItem = {
 };
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 export function rewardsToFormItems(rewards: TierRewardInput[]): RewardFormItem[] {
   return rewards.map((reward, index) => ({

@@ -174,7 +174,7 @@ export default function AdjustPointModal({
       <button
         type="button"
         onClick={openModal}
-        className="cursor-pointer rounded-4xl bg-brown-100 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+        className="cursor-pointer rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
       >
         ปรับ Point
       </button>
@@ -246,7 +246,7 @@ export default function AdjustPointModal({
                   value={value}
                   onChange={(event) => setValue(event.target.value)}
                   placeholder="0"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brown-100"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brown-100"
                 />
               </div>
 
@@ -260,7 +260,7 @@ export default function AdjustPointModal({
                   rows={3}
                   required
                   placeholder="ระบุเหตุผลในการปรับ point"
-                  className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brown-100"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brown-100"
                 />
               </div>
 
@@ -273,14 +273,14 @@ export default function AdjustPointModal({
                   type="button"
                   disabled={isSubmitting}
                   onClick={closeModal}
-                  className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
                 </button>

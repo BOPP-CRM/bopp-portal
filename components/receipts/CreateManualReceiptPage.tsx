@@ -418,7 +418,7 @@ export default function CreateManualReceiptPage() {
       <StepIndicator step={step} steps={flowSteps} />
 
       {error ? (
-        <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-100">
+        <div className="mb-4 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}

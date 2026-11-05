@@ -28,35 +28,30 @@ import {
   getEffectiveConvertPoints,
   getThaiWeekdayLabel,
 } from "@/utils/tier-points";
-import { Check, ExternalLink, ScanLine, X } from "lucide-react";
+import { Check, ExternalLink, ScanLine, X, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 export { calcRewardPoints } from "@/utils/tier-points";
 
-const MODAL_EXIT_MS = 250;
-
-type ReceiptDetailModalProps = {
+type ReceiptDetailPageProps = {
   receiptId: number;
-  onClose: () => void;
-  onSuccess: () => void;
 };
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 export default function ReceiptDetailModal({
   receiptId,
-  onClose,
-  onSuccess,
-}: ReceiptDetailModalProps) {
+}: ReceiptDetailPageProps) {
+  const router = useRouter();
   const [receipt, setReceipt] = useState<PortalReceipt | null>(null);
   const [tierDetail, setTierDetail] = useState<PortalTier | null>(null);
   const [receiptNumber, setReceiptNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isClosing, setIsClosing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showRejectForm, setShowRejectForm] = useState(false);
@@ -158,23 +153,9 @@ export default function ReceiptDetailModal({
     [amountNumber, effectiveConvertPoints],
   );
 
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
+  const goBack = () => {
+    router.push("/dashboard/receipts");
   };
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isSubmitting]);
 
   const validateAmount = () => {
     if (Number.isNaN(amountNumber) || amountNumber <= 0) {
@@ -232,7 +213,6 @@ export default function ReceiptDetailModal({
       setReceipt(updated);
       setReceiptNumber(updated.receipt_number || "");
       setAmount(String(updated.amount || ""));
-      onSuccess();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -249,8 +229,7 @@ export default function ReceiptDetailModal({
     try {
       const updated = await approveReceipt(receipt.id, buildReceiptPayload());
       setReceipt(updated);
-      onSuccess();
-      closeModal();
+      goBack();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -272,8 +251,7 @@ export default function ReceiptDetailModal({
         reject_reason: rejectReason.trim(),
       });
       setReceipt(updated);
-      onSuccess();
-      closeModal();
+      goBack();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -282,26 +260,15 @@ export default function ReceiptDetailModal({
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={isSubmitting ? undefined : closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="receipt-detail-title"
-        className={`max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/receipts"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
+        <ArrowLeft className="size-4" />
+        กลับไปรายการใบเสร็จ
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -455,7 +422,7 @@ export default function ReceiptDetailModal({
                   </table>
                 </div>
               ) : ocrTotal !== null ? (
-                <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-10 px-4 py-3">
+                <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-10 px-3 py-2">
                   <span className="text-sm font-medium text-defualt-text">
                     ยอดรวม
                   </span>
@@ -545,7 +512,7 @@ export default function ReceiptDetailModal({
                     />
                   </Field>
                   <Field label="Reward Point (คำนวณอัตโนมัติ)">
-                    <div className="rounded-xl border border-gray-200 bg-gray-10 px-4 py-3 text-sm font-medium text-brown-100">
+                    <div className="rounded-xl border border-gray-200 bg-gray-10 px-3 py-2 text-sm font-medium text-brown-100">
                       {formatNumber(previewRewardPoints)} Point
                     </div>
                   </Field>
@@ -608,7 +575,7 @@ export default function ReceiptDetailModal({
                         setRejectReason("");
                         setError(null);
                       }}
-                      className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       ยกเลิก
                     </button>
@@ -616,7 +583,7 @@ export default function ReceiptDetailModal({
                       type="button"
                       disabled={isSubmitting}
                       onClick={() => void handleReject()}
-                      className="w-full cursor-pointer rounded-4xl bg-red-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+                      className="w-full cursor-pointer rounded-4xl bg-red-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-red-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       {isSubmitting ? "กำลังปฏิเสธ..." : "ยืนยันปฏิเสธ"}
                     </button>
@@ -627,16 +594,16 @@ export default function ReceiptDetailModal({
                   <button
                     type="button"
                     disabled={isSubmitting}
-                    onClick={closeModal}
-                    className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
+                    onClick={goBack}
+                    className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    ปิด
+                    กลับ
                   </button>
                   <button
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => void handleSave()}
-                    className="w-full cursor-pointer rounded-4xl border border-brown-100 px-4 py-2.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full cursor-pointer rounded-4xl border border-brown-100 px-3 py-2 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSubmitting ? "กำลังบันทึก..." : "บันทึกการแก้ไข"}
                   </button>
@@ -644,7 +611,7 @@ export default function ReceiptDetailModal({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => setShowRejectForm(true)}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-4xl border border-red-100 px-4 py-2.5 text-sm font-medium text-red-100 transition hover:bg-red-100/10 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-4xl border border-red-100 px-3 py-2 text-sm font-medium text-red-100 transition hover:bg-red-100/10 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <X className="size-4" />
                     ปฏิเสธ
@@ -653,7 +620,7 @@ export default function ReceiptDetailModal({
                     type="button"
                     disabled={isSubmitting}
                     onClick={() => void handleApprove()}
-                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Check className="size-4" />
                     {isSubmitting ? "กำลังอนุมัติ..." : "อนุมัติ"}
@@ -663,10 +630,10 @@ export default function ReceiptDetailModal({
             ) : (
               <button
                 type="button"
-                onClick={closeModal}
-                className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+                onClick={goBack}
+                className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
               >
-                ปิด
+                กลับ
               </button>
             )}
           </div>
@@ -744,7 +711,7 @@ export function StateBadge({
 
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-medium ${styles[state]} ${className}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${styles[state]} ${className}`}
     >
       {labels[state]}
     </span>

@@ -12,9 +12,7 @@ type FilterGroupProps<T extends string | number> = {
 };
 
 export function FilterBar({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mb-4 flex flex-wrap items-end gap-3">{children}</div>
-  );
+  return <div className="mb-3 flex flex-wrap items-end gap-2">{children}</div>;
 }
 
 export default function FilterGroup<T extends string | number>({
@@ -32,7 +30,7 @@ export default function FilterGroup<T extends string | number>({
       <div
         role="tablist"
         aria-label={ariaLabel ?? label}
-        className="inline-flex max-w-full flex-wrap gap-1 rounded-2xl border border-gray-200 bg-gray-10 p-1"
+        className="inline-flex max-w-full flex-wrap gap-0.5 rounded-md border border-gray-200 bg-gray-10 p-0.5"
       >
         {options.map((option) => {
           const selected = option.value === value;
@@ -43,7 +41,7 @@ export default function FilterGroup<T extends string | number>({
               role="tab"
               aria-selected={selected}
               onClick={() => onChange(option.value)}
-              className={`cursor-pointer rounded-xl px-4 py-2 text-sm font-medium whitespace-nowrap transition ${
+              className={`cursor-pointer rounded-sm px-3 py-1 text-xs font-medium whitespace-nowrap transition ${
                 selected
                   ? "bg-brown-100 text-white"
                   : "text-defualt-text hover:bg-white"

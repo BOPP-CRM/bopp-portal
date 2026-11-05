@@ -26,7 +26,7 @@ export default function SourceBadge({
 
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${SOURCE_STYLES[source] ?? SOURCE_STYLES.other} ${className}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${SOURCE_STYLES[source] ?? SOURCE_STYLES.other} ${className}`}
     >
       {text}
     </span>

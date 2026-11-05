@@ -3,6 +3,7 @@
 import { getOmisellWebhookLogs } from "@/services/omisell/omisell";
 import type { OmisellWebhookLog } from "@/services/omisell/types";
 import { TableSkeleton } from "@/components/util/Skeleton";
+import { compactTableClassName } from "@/components/util/data-table";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
@@ -76,7 +77,7 @@ export default function OmisellWebhookLogs() {
           </div>
 
           <div className="mt-4 hidden overflow-x-auto md:block">
-            <table className="min-w-full text-left text-sm">
+            <table className={`min-w-full text-left ${compactTableClassName}`}>
               <thead className="border-b border-gray-200 text-xs text-gray-100">
                 <tr>
                   <th className="whitespace-nowrap px-3 py-2.5 font-medium">

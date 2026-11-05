@@ -2,6 +2,7 @@
 
 import RedeemQrcodeFormModal from "@/components/redeem-qrcodes/RedeemQrcodeFormModal";
 import FilterGroup from "@/components/util/FilterGroup";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   getRedeemQrcode,
@@ -12,7 +13,7 @@ import { formatDateTime, isApiDateAfterNow } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -36,7 +37,10 @@ export default function RedeemQrcodesPage() {
     return undefined;
   }, [activeFilter]);
 
+  const loadRequestId = useRef(0);
+
   const loadQrcodes = useCallback(async () => {
+    const requestId = ++loadRequestId.current;
     setError(null);
     setLoading(true);
 
@@ -46,14 +50,16 @@ export default function RedeemQrcodesPage() {
         limit: PAGE_SIZE,
         offset,
       });
+      if (requestId !== loadRequestId.current) return;
       setQrcodes(data.redeemQrcodes);
       setTotal(data.total);
     } catch (loadError) {
+      if (requestId !== loadRequestId.current) return;
       setError(handleError(loadError).message);
       setQrcodes([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [activeParam, offset]);
 
@@ -125,8 +131,8 @@ export default function RedeemQrcodesPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             รางวัล QR Code
@@ -139,7 +145,7 @@ export default function RedeemQrcodesPage() {
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
         >
           <Plus className="size-4" />
           สร้าง Redeem QR
@@ -147,7 +153,7 @@ export default function RedeemQrcodesPage() {
       </div>
 
       {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
@@ -171,7 +177,7 @@ export default function RedeemQrcodesPage() {
           <div className="p-6 text-sm text-gray-100">ยังไม่มี Redeem QR</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className={`min-w-full text-left ${compactTableClassName}`}>
               <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                 <tr>
                   <th className="px-4 py-4 font-medium">ชื่อ</th>
@@ -209,7 +215,7 @@ export default function RedeemQrcodesPage() {
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           isActive(qrcode)
                             ? "bg-brown-yellow-5 text-brown-100"
                             : "bg-gray-10 text-gray-100"

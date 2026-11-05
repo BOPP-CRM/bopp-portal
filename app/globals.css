@@ -51,6 +51,11 @@
 
 @theme inline {
   --font-sans: var(--font-noto-sans-thai);
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.25rem;
+  --radius-2xl: 0.375rem;
+  --radius-3xl: 0.375rem;
+  --radius-4xl: 0.25rem;
 
   --animate-dialog-backdrop-in: dialog-backdrop-in 0.25s ease-out forwards;
   --animate-dialog-pop-in: dialog-pop-in 0.4s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;

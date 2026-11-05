@@ -45,10 +45,10 @@ function getCodeSourceLabel(codeSource: PortalCoupon["code_source"]) {
 }
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 const fileInputClassName =
-  "w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-brown-yellow-5 file:px-3 file:py-1.5 file:text-sm file:text-brown-100";
+  "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-brown-yellow-5 file:px-3 file:py-1.5 file:text-sm file:text-brown-100";
 
 export default function CouponAddCodesModal({
   coupon,
@@ -297,7 +297,7 @@ export default function CouponAddCodesModal({
                         : "ดาวน์โหลด template"}
                     </button>
                   </div>
-                  <pre className="mt-3 overflow-x-auto rounded-lg bg-white px-4 py-3 font-mono text-xs text-defualt-text">
+                  <pre className="mt-3 overflow-x-auto rounded-lg bg-white px-3 py-2 font-mono text-xs text-defualt-text">
                     {COUPON_CSV_TEMPLATE_PREVIEW}
                   </pre>
                 </div>
@@ -326,14 +326,14 @@ export default function CouponAddCodesModal({
               type="button"
               disabled={isSubmitting}
               onClick={closeModal}
-              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSubmitting ? "กำลังเพิ่ม..." : "เพิ่มโค้ด"}
             </button>

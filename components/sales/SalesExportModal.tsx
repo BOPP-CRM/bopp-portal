@@ -116,7 +116,7 @@ export default function SalesExportModal({
             value={monthValue}
             onChange={(event) => setMonthValue(event.target.value)}
             disabled={loading}
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100 disabled:cursor-not-allowed disabled:opacity-60"
           />
           <p className="mt-2 text-xs text-gray-100">
             จะ export รายการขายทั้งหมดในเดือน {monthLabel}

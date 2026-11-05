@@ -10,22 +10,17 @@ import {
   AI_SALE_REGENERATE_DESCRIPTION,
   AI_SALE_REGENERATE_TITLE,
 } from "@/services/openai/types";
-import { getSale, regenerateSaleWithAi, type PortalSale } from "@/services/sales/sales";
+import { getSale, getReceiptSaleSyncStatus, regenerateSaleWithAi, type PortalSale } from "@/services/sales/sales";
 import { SALE_STATUS_LABELS, type SaleStatus } from "@/services/sales/types";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
-import { RefreshCw, X } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-const MODAL_EXIT_MS = 250;
-
-type SaleDetailModalProps = {
+type SaleDetailPageProps = {
   saleId: number;
-  openAiConfigured?: boolean | null;
-  onClose: () => void;
-  onUpdated?: () => void;
 };
 
 export function StatusBadge({
@@ -42,23 +37,18 @@ export function StatusBadge({
 
   return (
     <span
-      className={`rounded-full px-3 py-1 text-xs font-medium ${styles} ${className}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${styles} ${className}`}
     >
       {SALE_STATUS_LABELS[status]}
     </span>
   );
 }
 
-export default function SaleDetailModal({
-  saleId,
-  openAiConfigured = null,
-  onClose,
-  onUpdated,
-}: SaleDetailModalProps) {
+export default function SaleDetailModal({ saleId }: SaleDetailPageProps) {
   const [sale, setSale] = useState<PortalSale | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isClosing, setIsClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openAiConfigured, setOpenAiConfigured] = useState<boolean | null>(null);
   const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const { requireOpenAiConfigured } = useAiSyncGate(openAiConfigured);
@@ -81,10 +71,11 @@ export default function SaleDetailModal({
     void loadSale();
   }, [saleId]);
 
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(onClose, MODAL_EXIT_MS);
-  };
+  useEffect(() => {
+    void getReceiptSaleSyncStatus()
+      .then((status) => setOpenAiConfigured(status.openai_configured))
+      .catch(() => setOpenAiConfigured(false));
+  }, []);
 
   const handleRequestRegenerate = () => {
     requireOpenAiConfigured(() => setShowRegenerateConfirm(true));
@@ -97,7 +88,6 @@ export default function SaleDetailModal({
       const response = await regenerateSaleWithAi(saleId, true);
       setSale(response.sale);
       setShowRegenerateConfirm(false);
-      onUpdated?.();
     } catch (regenerateError) {
       setError(handleError(regenerateError).message);
     } finally {
@@ -105,34 +95,18 @@ export default function SaleDetailModal({
     }
   };
 
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") handleClose();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
-
   return (
     <>
-    <div
-      className={`fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 md:items-center md:p-4${
-        isClosing ? " animate-fade-out" : " animate-fade-in"
-      }`}
-      onClick={handleClose}
-    >
-      <div
-        className={`flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl md:rounded-2xl${
-          isClosing ? " animate-slide-down" : " animate-slide-up"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/sales"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+        <ArrowLeft className="size-4" />
+        กลับไปรายการขาย
+      </Link>
+      <div className="overflow-hidden rounded-md border border-gray-200 bg-white">
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
           <div className="min-w-0">
             <h2 className="text-lg font-semibold text-defualt-text">
               รายละเอียดการขาย
@@ -143,21 +117,13 @@ export default function SaleDetailModal({
               </p>
             ) : null}
           </div>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-gray-100 transition hover:bg-gray-10"
-            aria-label="ปิด"
-          >
-            <X className="size-5" />
-          </button>
         </div>
 
         <div className="overflow-y-auto px-5 py-5">
           {loading ? (
             <ModalDetailSkeleton />
           ) : error ? (
-            <div className="rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
+            <div className="rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">
               {error}
             </div>
           ) : sale ? (
@@ -178,7 +144,7 @@ export default function SaleDetailModal({
                     type="button"
                     onClick={handleRequestRegenerate}
                     disabled={isRegenerating}
-                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-defualt-text hover:bg-gray-10 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-defualt-text hover:bg-gray-10 disabled:opacity-50"
                   >
                     <RefreshCw
                       className={`size-4${isRegenerating ? " animate-spin" : ""}`}

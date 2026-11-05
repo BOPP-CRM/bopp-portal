@@ -15,7 +15,7 @@ export default function StatusBadge({
 
   return (
     <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${color ? "" : FALLBACK_STYLE} ${className}`}
+      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${color ? "" : FALLBACK_STYLE} ${className}`}
       style={
         color
           ? {

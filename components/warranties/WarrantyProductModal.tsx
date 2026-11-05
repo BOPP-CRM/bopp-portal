@@ -7,7 +7,7 @@ import { Plus, Trash2, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 export type WarrantyProductFormPayload = {
   name: string;
@@ -144,7 +144,7 @@ export default function WarrantyProductModal({
         </div>
 
         {error ? (
-          <div className="mt-4 rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
+          <div className="mt-4 rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">
             {error}
           </div>
         ) : null}
@@ -283,14 +283,14 @@ export default function WarrantyProductModal({
             <button
               type="button"
               onClick={handleClose}
-              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100"
+              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
             >
               {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
             </button>
@@ -328,7 +328,7 @@ export function ProductImage({
   const imageUrl = getProxiedImageUrl(src);
   if (!imageUrl) {
     return (
-      <div className="flex size-12 items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-10 text-xs text-gray-100">
+      <div className="flex size-8 items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-10 text-[10px] text-gray-100">
         ไม่มีรูป
       </div>
     );
@@ -338,7 +338,7 @@ export function ProductImage({
     <img
       src={imageUrl}
       alt={alt}
-      className="size-12 rounded-xl border border-gray-200 object-cover"
+      className="size-8 rounded-lg border border-gray-200 object-cover"
     />
   );
 }

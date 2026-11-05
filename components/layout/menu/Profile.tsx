@@ -114,7 +114,7 @@ export default function Profile() {
               setShowSettings(true);
               setIsOpen(false);
             }}
-            className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-gray-100 hover:text-brown-100 cursor-pointer"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-100 hover:text-brown-100 cursor-pointer"
           >
             <Settings className="size-4" />
             ตั้งค่าบัญชี
@@ -123,7 +123,7 @@ export default function Profile() {
             type="button"
             role="menuitem"
             onClick={handleLogout}
-            className="w-full px-4 py-3 text-left text-sm hover:text-brown-100 cursor-pointer text-gray-100"
+            className="w-full px-3 py-2 text-left text-sm hover:text-brown-100 cursor-pointer text-gray-100"
           >
             ออกจากระบบ
           </button>

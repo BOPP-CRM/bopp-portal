@@ -2,6 +2,7 @@
 
 import StatusBadge from "@/components/warranties/StatusBadge";
 import ActionMenu from "@/components/util/ActionMenu";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   createWarrantyContributor,
@@ -20,7 +21,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 type EditTarget =
   | { type: "contributor"; item: WarrantyContributor | null }
@@ -124,8 +125,8 @@ export default function WarrantyConfigPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <Link
             href="/dashboard/warranties"
@@ -144,13 +145,13 @@ export default function WarrantyConfigPage() {
       </div>
 
       {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
 
       {error ? (
-        <div className="mb-4 rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
+        <div className="mb-4 rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}
@@ -261,7 +262,7 @@ function ConfigSection({
         <button
           type="button"
           onClick={onAction}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
         >
           <Plus className="size-4" />
           {actionLabel}
@@ -283,7 +284,7 @@ function ConfigTable({
 }) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 text-gray-100">
           <tr>
             {headers.map((header) => (
@@ -467,14 +468,14 @@ function EditModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100"
+              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-60"
+              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
             >
               {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
             </button>

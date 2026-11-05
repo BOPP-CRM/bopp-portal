@@ -1,6 +1,6 @@
 "use client";
 
-import ReceiptDetailModal, {
+import {
   StateBadge,
 } from "@/components/receipts/ReceiptDetailModal";
 import AiSyncConfirmDialog, {
@@ -12,6 +12,7 @@ import {
 } from "@/components/sales/useReceiptSaleSyncJob";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { useApp } from "@/providers/app-provider";
 import { getReceipts } from "@/services/receipts/receipts";
@@ -26,7 +27,8 @@ import { displayValue, formatNumber } from "@/utils/format";
 import { isAdmin } from "@/utils/roles";
 import { ChevronLeft, ChevronRight, Plus, RefreshCw, Search } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -34,6 +36,7 @@ type StateFilter = ReceiptState | "all";
 
 export default function ReceiptsPage() {
   const { me } = useApp();
+  const router = useRouter();
   const [receipts, setReceipts] = useState<PortalReceipt[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -43,9 +46,6 @@ export default function ReceiptsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [selectedReceiptId, setSelectedReceiptId] = useState<number | null>(
-    null,
-  );
   const [receiptMissingCount, setReceiptMissingCount] = useState(0);
   const [openAiConfigured, setOpenAiConfigured] = useState<boolean | null>(null);
   const [showReceiptAiConfirm, setShowReceiptAiConfirm] = useState(false);
@@ -59,7 +59,10 @@ export default function ReceiptsPage() {
     [stateFilter],
   );
 
+  const loadRequestId = useRef(0);
+
   const loadReceipts = useCallback(async () => {
+    const requestId = ++loadRequestId.current;
     setError(null);
     setLoading(true);
 
@@ -70,14 +73,16 @@ export default function ReceiptsPage() {
         limit: PAGE_SIZE,
         offset,
       });
+      if (requestId !== loadRequestId.current) return;
       setReceipts(data.receipts);
       setTotal(data.total);
     } catch (loadError) {
+      if (requestId !== loadRequestId.current) return;
       setError(handleError(loadError).message);
       setReceipts([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [offset, search, stateParam]);
 
@@ -128,12 +133,6 @@ export default function ReceiptsPage() {
     setSearch(searchInput.trim());
   };
 
-  const handleSuccess = async () => {
-    setSuccessMessage("บันทึกใบเสร็จสำเร็จ");
-    await loadReceipts();
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
-
   const handleStartReceiptSync = async () => {
     setIsStartingReceiptSync(true);
     setError(null);
@@ -168,8 +167,8 @@ export default function ReceiptsPage() {
   ];
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             ตรวจสอบใบเสร็จ
@@ -187,13 +186,13 @@ export default function ReceiptsPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาเลขใบเสร็จ, ชื่อ, LINE ID..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
             />
           </form>
 
           <Link
             href="/dashboard/receipts/create"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brown-100 px-4 py-3 text-sm font-medium whitespace-nowrap text-white hover:bg-brown-100/80"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-brown-100 px-3 py-2 text-sm font-medium whitespace-nowrap text-white hover:bg-brown-100/80"
           >
             <Plus className="size-4" />
             เพิ่มใบเสร็จ
@@ -208,7 +207,7 @@ export default function ReceiptsPage() {
                 isReceiptSyncActive ||
                 receiptMissingCount <= 0
               }
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium whitespace-nowrap text-defualt-text hover:bg-gray-10 disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium whitespace-nowrap text-defualt-text hover:bg-gray-10 disabled:opacity-50"
             >
               <RefreshCw
                 className={`size-4${isStartingReceiptSync || isReceiptSyncActive ? " animate-spin" : ""}`}
@@ -224,7 +223,7 @@ export default function ReceiptsPage() {
       stateFilter === "approved" &&
       receiptMissingCount > 0 &&
       !isReceiptSyncActive ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           มีใบเสร็จที่อนุมัติแล้ว {receiptMissingCount} รายการ
           ที่ยังไม่ได้ sync เป็นรายการขาย
         </div>
@@ -238,7 +237,7 @@ export default function ReceiptsPage() {
       ) : null}
 
       {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
@@ -270,13 +269,13 @@ export default function ReceiptsPage() {
                 <ReceiptCard
                   key={receipt.id}
                   receipt={receipt}
-                  onOpen={() => setSelectedReceiptId(receipt.id)}
+                  onOpen={() => router.push(`/dashboard/receipts/${receipt.id}`)}
                 />
               ))}
             </div>
 
             <div className="hidden overflow-x-auto lg:block">
-              <table className="w-full min-w-[900px] text-left text-sm">
+              <table className={`w-full min-w-[860px] text-left ${compactTableClassName}`}>
                 <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                   <tr>
                     <th className="px-4 py-4 font-medium">เลขใบเสร็จ</th>
@@ -300,7 +299,7 @@ export default function ReceiptsPage() {
                   {receipts.map((receipt) => (
                     <tr
                       key={receipt.id}
-                      onClick={() => setSelectedReceiptId(receipt.id)}
+                      onClick={() => router.push(`/dashboard/receipts/${receipt.id}`)}
                       className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                     >
                       <td className="max-w-[120px] truncate px-4 py-4 font-medium text-defualt-text">
@@ -316,7 +315,7 @@ export default function ReceiptsPage() {
                         {formatNumber(receipt.reward_points)}
                       </td>
                       <td className="px-4 py-4">
-                        <span className="inline-block max-w-[140px] truncate rounded-full bg-brown-yellow-5 px-3 py-1 text-xs font-medium text-brown-100">
+                        <span className="inline-block max-w-[140px] truncate rounded-full bg-brown-yellow-5 px-2 py-0.5 text-[11px] font-medium text-brown-100">
                           {receipt.tier.name}
                         </span>
                       </td>
@@ -367,14 +366,6 @@ export default function ReceiptsPage() {
         ) : null}
       </div>
 
-      {selectedReceiptId ? (
-        <ReceiptDetailModal
-          receiptId={selectedReceiptId}
-          onClose={() => setSelectedReceiptId(null)}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
-
       <AiSyncConfirmDialog
         open={showReceiptAiConfirm}
         onClose={() => setShowReceiptAiConfirm(false)}
@@ -388,7 +379,7 @@ export default function ReceiptsPage() {
 
 function MemberCell({ user }: { user: PortalReceipt["user"] }) {
   return (
-    <div className="flex min-w-0 items-center gap-3">
+    <div className="flex min-w-0 items-center gap-2">
       <MemberAvatar
         name={user.display_name}
         pictureUrl={user.picture_url}
@@ -402,7 +393,7 @@ function MemberCell({ user }: { user: PortalReceipt["user"] }) {
         >
           {user.display_name}
         </Link>
-        <p className="truncate text-xs text-gray-100">
+        <p className="truncate text-[11px] leading-4 text-gray-100">
           {displayValue(user.line_user_id)}
         </p>
       </div>
@@ -428,7 +419,7 @@ function ReceiptCard({
           onOpen();
         }
       }}
-      className="cursor-pointer space-y-4 p-4 transition-colors hover:bg-gray-10"
+      className="cursor-pointer space-y-2.5 p-3 text-sm transition-colors hover:bg-gray-10"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -460,7 +451,7 @@ function ReceiptCard({
         <div className="col-span-2">
           <dt className="text-xs text-gray-100">ระดับ</dt>
           <dd className="mt-1">
-            <span className="inline-block rounded-full bg-brown-yellow-5 px-3 py-1 text-xs font-medium text-brown-100">
+            <span className="inline-block rounded-full bg-brown-yellow-5 px-2 py-0.5 text-[11px] font-medium text-brown-100">
               {receipt.tier.name}
             </span>
           </dd>

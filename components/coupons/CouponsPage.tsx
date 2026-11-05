@@ -4,6 +4,7 @@ import CouponAddCodesModal from "@/components/coupons/CouponAddCodesModal";
 import CouponFormModal from "@/components/coupons/CouponFormModal";
 import CouponRedemptionsModal from "@/components/coupons/CouponRedemptionsModal";
 import ActionMenu from "@/components/util/ActionMenu";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   exportCouponCodes,
@@ -100,8 +101,8 @@ export default function CouponsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             จัดการคูปอง
@@ -114,7 +115,7 @@ export default function CouponsPage() {
         <button
           type="button"
           onClick={openCreateModal}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
         >
           <Plus className="size-4" />
           เพิ่มคูปอง
@@ -122,7 +123,7 @@ export default function CouponsPage() {
       </div>
 
       {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
@@ -136,7 +137,7 @@ export default function CouponsPage() {
           <div className="p-6 text-sm text-gray-100">ยังไม่มีคูปอง</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className={`min-w-full text-left ${compactTableClassName}`}>
               <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                 <tr>
                   <th className="px-4 py-4 font-medium">คูปอง</th>
@@ -161,10 +162,10 @@ export default function CouponsPage() {
                           <img
                             src={String(coupon.image_url)}
                             alt={coupon.name}
-                            className="size-10 rounded-lg object-cover"
+                            className="size-8 rounded-lg object-cover"
                           />
                         ) : (
-                          <div className="size-10 rounded-lg bg-brown-yellow-5" />
+                          <div className="size-8 rounded-lg bg-brown-yellow-5" />
                         )}
                         <div>
                           <p className="font-medium text-defualt-text">
@@ -202,7 +203,7 @@ export default function CouponsPage() {
                     </td>
                     <td className="px-4 py-4">
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           coupon.is_show_in_ui
                             ? "bg-brown-yellow-5 text-brown-100"
                             : "bg-gray-10 text-gray-100"

@@ -106,7 +106,7 @@ export default function CreateManualReceiptPosView({
 
   return (
     <div className="fixed inset-0 z-30 flex flex-col bg-gray-10">
-      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-4 py-3">
+      <header className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2">
         <div className="flex min-w-0 items-center gap-2">
           {step !== "member" && step !== "success" ? (
             <button
@@ -143,7 +143,7 @@ export default function CreateManualReceiptPosView({
       </header>
 
       {error ? (
-        <div className="mx-4 mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-100">
+        <div className="mx-4 mt-4 rounded-2xl border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}

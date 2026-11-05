@@ -375,7 +375,7 @@ export default function QrScannerModal({
         ) : null}
 
         {error && status !== "processing" ? (
-          <p className="rounded-2xl bg-red-500/20 px-4 py-3 text-center text-sm text-red-100">
+          <p className="rounded-2xl bg-red-500/20 px-3 py-2 text-center text-sm text-red-100">
             {error}
           </p>
         ) : null}

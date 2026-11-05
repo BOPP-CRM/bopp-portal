@@ -24,11 +24,11 @@ export function TableSkeleton({
   columns,
   showHeader = true,
   avatarColumn = false,
-  cellClassName = "px-4 py-4",
+  cellClassName = "px-3 py-1.5",
 }: TableSkeletonProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className="min-w-full text-left text-xs">
         {showHeader ? (
           <thead className="border-b border-gray-200 bg-gray-10">
             <tr>
@@ -49,9 +49,9 @@ export function TableSkeleton({
               {Array.from({ length: columns }).map((_, colIndex) => (
                 <td key={colIndex} className={cellClassName}>
                   {avatarColumn && colIndex === 0 ? (
-                    <div className="flex items-center gap-3">
-                      <Skeleton className="size-10 shrink-0 rounded-full" />
-                      <Skeleton className="h-4 w-28" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="size-7 shrink-0 rounded-full" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
                   ) : (
                     <Skeleton
@@ -125,7 +125,7 @@ export function ContentSkeleton({ className = "p-6" }: { className?: string }) {
 
 export function MemberDetailSkeleton() {
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-3 md:p-5">
       <Skeleton className="mb-6 h-4 w-36" />
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -208,7 +208,7 @@ export function DashboardShellSkeleton() {
           ))}
         </div>
       </div>
-      <div className="flex-1 p-4 md:p-8">
+      <div className="flex-1 p-3 md:p-5">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="mt-2 h-4 w-64" />
         <div className="mt-6 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">

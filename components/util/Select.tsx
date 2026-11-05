@@ -134,7 +134,7 @@ export default function Select<T extends string | number>({
                       onChange(option.value);
                       setIsOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm transition ${
+                    className={`flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm transition ${
                       isSelected
                         ? "bg-brown-yellow-5 text-brown-100"
                         : "text-defualt-text hover:bg-gray-10"
@@ -162,7 +162,7 @@ export default function Select<T extends string | number>({
         aria-expanded={isOpen}
         aria-controls={listboxId}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex w-full items-center justify-between rounded-xl border bg-white px-4 py-3 text-left text-sm transition outline-none ${
+        className={`flex w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-left text-sm transition outline-none ${
           isOpen
             ? "border-brown-100 ring-2 ring-brown-100/20"
             : "border-gray-200 hover:border-gray-50"

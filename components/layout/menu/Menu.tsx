@@ -216,7 +216,7 @@ export default function Menu() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-30 flex items-center justify-between bg-white px-4 py-3 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] md:hidden">
+      <header className="fixed inset-x-0 top-0 z-30 flex items-center justify-between bg-white px-3 py-2 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] md:hidden">
         <button
           type="button"
           onClick={() => setIsMobileOpen(true)}

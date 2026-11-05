@@ -5,6 +5,7 @@ import ZortoutMemberSyncProgress, {
 } from "@/components/members/ZortoutMemberSyncProgress";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import ActionMenu from "@/components/util/ActionMenu";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import dialog from "@/components/util/dialog";
 import { getUsers } from "@/services/members/members";
@@ -23,7 +24,7 @@ import {
 } from "@/utils/format";
 import { ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
 
@@ -43,7 +44,10 @@ export default function MembersPage() {
   const [activeSyncJobId, setActiveSyncJobId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  const loadRequestId = useRef(0);
+
   const loadUsers = useCallback(async () => {
+    const requestId = ++loadRequestId.current;
     setError(null);
     setLoading(true);
 
@@ -53,14 +57,16 @@ export default function MembersPage() {
         limit: PAGE_SIZE,
         offset,
       });
+      if (requestId !== loadRequestId.current) return;
       setUsers(data.users);
       setTotal(data.total);
     } catch (loadError) {
+      if (requestId !== loadRequestId.current) return;
       setError(handleError(loadError).message);
       setUsers([]);
       setTotal(0);
     } finally {
-      setLoading(false);
+      if (requestId === loadRequestId.current) setLoading(false);
     }
   }, [offset, search]);
 
@@ -143,8 +149,8 @@ export default function MembersPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="p-3 md:p-5">
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-defualt-text">
             รายชื่อสมาชิก
@@ -160,7 +166,7 @@ export default function MembersPage() {
               type="button"
               disabled={syncAllLoading}
               onClick={() => void handleSyncAll()}
-              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl bg-brown-100 px-4 py-3 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <RefreshCw
                 className={`size-4 ${syncAllLoading ? "animate-spin" : ""}`}
@@ -176,7 +182,7 @@ export default function MembersPage() {
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาชื่อ, เบอร์โทร..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
             />
           </form>
         </div>
@@ -201,7 +207,7 @@ export default function MembersPage() {
           <div className="p-6 text-sm text-gray-100">ไม่พบสมาชิก</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className={`min-w-full text-left ${compactTableClassName}`}>
               <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                 <tr>
                   <th className="px-4 py-4 font-medium">สมาชิก</th>
@@ -223,13 +229,14 @@ export default function MembersPage() {
                     className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2">
                         <MemberAvatar
                           name={user.display_name}
                           pictureUrl={user.picture_url}
+                          size="xs"
                         />
-                        <div>
-                          <p className="font-medium text-defualt-text">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-defualt-text">
                             {user.display_name}
                           </p>
                         </div>
@@ -239,7 +246,7 @@ export default function MembersPage() {
                       {displayValue(user.phone)}
                     </td>
                     <td className="px-4 py-4">
-                      <span className="rounded-full bg-brown-yellow-5 px-3 py-1 text-xs font-medium text-brown-100">
+                      <span className="rounded-full bg-brown-yellow-5 px-2 py-0.5 text-[11px] font-medium text-brown-100">
                         {user.tier.name}
                       </span>
                     </td>

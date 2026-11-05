@@ -20,32 +20,27 @@ import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
 import { getProxiedImageUrl } from "@/utils/image";
-import { ExternalLink, ScanLine } from "lucide-react";
+import { ExternalLink, ScanLine, ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const MODAL_EXIT_MS = 250;
+type WarrantyDetailPageProps = {
+  warrantyId: number;
+};
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
-
-type WarrantyDetailModalProps = {
-  warrantyId: number;
-  onClose: () => void;
-  onSuccess: () => void;
-};
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 export default function WarrantyDetailModal({
   warrantyId,
-  onClose,
-  onSuccess,
-}: WarrantyDetailModalProps) {
+}: WarrantyDetailPageProps) {
+  const router = useRouter();
   const [warranty, setWarranty] = useState<PortalWarranty | null>(null);
   const [statuses, setStatuses] = useState<WarrantyStatus[]>([]);
   const [statusId, setStatusId] = useState<number>(0);
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isClosing, setIsClosing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ocrReceiptNumber, setOcrReceiptNumber] = useState<string | null>(
@@ -115,23 +110,9 @@ export default function WarrantyDetailModal({
     }
   };
 
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
+  const goBack = () => {
+    router.push("/dashboard/warranties");
   };
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isSubmitting]);
 
   const handleUpdateStatus = async () => {
     if (!warranty || !statusId) return;
@@ -143,7 +124,6 @@ export default function WarrantyDetailModal({
         status_id: statusId,
       });
       setWarranty(updated);
-      onSuccess();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -165,7 +145,6 @@ export default function WarrantyDetailModal({
       setComment("");
       const updated = await getWarranty(warranty.id);
       setWarranty(updated);
-      onSuccess();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -174,26 +153,15 @@ export default function WarrantyDetailModal({
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={isSubmitting ? undefined : closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="warranty-detail-title"
-        className={`max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/warranties"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
+        <ArrowLeft className="size-4" />
+        กลับไปรายการรับประกัน
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2
@@ -328,7 +296,7 @@ export default function WarrantyDetailModal({
                   </table>
                 </div>
               ) : ocrTotal !== null ? (
-                <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-10 px-4 py-3">
+                <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-10 px-3 py-2">
                   <span className="text-sm font-medium text-defualt-text">
                     ยอดรวม
                   </span>
@@ -395,7 +363,7 @@ export default function WarrantyDetailModal({
                   type="button"
                   disabled={isSubmitting || statusId === warranty.status.id}
                   onClick={() => void handleUpdateStatus()}
-                  className="cursor-pointer rounded-4xl bg-brown-100 px-5 py-3 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="cursor-pointer rounded-4xl bg-brown-100 px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? "กำลังบันทึก..." : "บันทึกสถานะ"}
                 </button>
@@ -437,7 +405,7 @@ export default function WarrantyDetailModal({
                 type="button"
                 disabled={isSubmitting || !comment.trim()}
                 onClick={() => void handleAddComment()}
-                className="mt-3 cursor-pointer rounded-4xl border border-brown-100 px-5 py-2.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-3 cursor-pointer rounded-4xl border border-brown-100 px-3.5 py-1.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? "กำลังส่ง..." : "ส่งความคิดเห็น"}
               </button>
@@ -447,10 +415,10 @@ export default function WarrantyDetailModal({
 
             <button
               type="button"
-              onClick={closeModal}
-              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+              onClick={goBack}
+              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
             >
-              ปิด
+              กลับ
             </button>
           </div>
         ) : null}

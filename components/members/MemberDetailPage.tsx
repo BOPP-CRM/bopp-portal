@@ -125,7 +125,7 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
   }
 
   return (
-    <div className="p-4 md:p-8">
+    <div className="p-3 md:p-5">
       <Link
         href="/dashboard/members"
         className="mb-6 inline-flex items-center gap-2 text-sm text-gray-100 hover:text-brown-100"
@@ -135,13 +135,13 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
       </Link>
 
       {successMessage ? (
-        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-4 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
 
       {syncError ? (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-100">
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-100">
           {syncError}
         </div>
       ) : null}
@@ -277,7 +277,7 @@ function PointBalances({ points }: { points: PortalUserPoint[] }) {
           {secondaryPoints.map((point) => (
             <div
               key={point.currency.id}
-              className="flex items-center justify-between gap-4 px-4 py-3"
+              className="flex items-center justify-between gap-4 px-3 py-2"
             >
               <dt className="text-sm text-gray-100">
                 {point.currency.name}

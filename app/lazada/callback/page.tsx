@@ -42,7 +42,7 @@ async function CallbackContent({
 
           <Link
             href="/dashboard/connections?tab=lazada"
-            className="mt-2 inline-flex items-center rounded-4xl bg-brown-100 px-5 py-2.5 text-sm font-medium text-white hover:bg-brown-100/80"
+            className="mt-2 inline-flex items-center rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-brown-100/80"
           >
             กลับไปหน้า Connections
           </Link>

@@ -2,6 +2,7 @@
 
 import AppearanceTab from "@/components/partner/AppearanceTab";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import { compactTableClassName } from "@/components/util/data-table";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { getPartner } from "@/services/partner/partner";
 import type { PartnerAd, PartnerDetail, PartnerUi } from "@/services/partner/types";
@@ -59,8 +60,8 @@ export default function PartnerPage() {
   }, [loadPartner]);
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
+    <div className="p-3 md:p-5">
+      <div className="mb-4">
         <h1 className="text-2xl font-semibold text-defualt-text">
           ข้อมูล Partner
         </h1>
@@ -193,7 +194,7 @@ function AdsTab({ ads }: { ads: PartnerAd[] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
           <tr>
             <th className="px-4 py-4 font-medium">รูป</th>
@@ -247,7 +248,7 @@ function TiersTab({ tiers }: { tiers: PartnerDetail["tier"] }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
+      <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
           <tr>
             <th className="px-4 py-4 font-medium">ระดับ</th>
@@ -325,7 +326,7 @@ function StatusBadge({
 }) {
   return (
     <span
-      className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${
+      className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-medium ${
         active
           ? "bg-brown-yellow-5 text-brown-100"
           : "bg-gray-10 text-gray-100"

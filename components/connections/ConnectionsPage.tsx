@@ -55,8 +55,8 @@ export default function ConnectionsPage() {
   };
 
   return (
-    <div className="p-4 md:p-8">
-      <div className="mb-6">
+    <div className="p-3 md:p-5">
+      <div className="mb-4">
         <h1 className="text-2xl font-semibold text-defualt-text">
           การเชื่อมต่อ
         </h1>

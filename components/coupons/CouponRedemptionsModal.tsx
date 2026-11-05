@@ -6,6 +6,7 @@ import type {
   CouponRedemptionSummary,
 } from "@/services/coupons/types";
 import Select from "@/components/util/Select";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
@@ -174,22 +175,22 @@ export default function CouponRedemptionsModal({
 
         <div className="mt-5">
           {loading ? (
-            <TableSkeleton rows={5} columns={6} cellClassName="px-4 py-3" />
+            <TableSkeleton rows={5} columns={6} cellClassName="px-3 py-2" />
           ) : error ? (
             <p className="text-sm text-red-100">{error}</p>
           ) : redemptions.length === 0 ? (
             <p className="text-sm text-gray-100">ยังไม่มีประวัติการแลก</p>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-gray-200">
-              <table className="min-w-full text-left text-sm">
+              <table className={`min-w-full text-left ${compactTableClassName}`}>
                 <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                   <tr>
-                    <th className="px-4 py-3 font-medium">สมาชิก</th>
-                    <th className="px-4 py-3 font-medium">โค้ด</th>
-                    <th className="px-4 py-3 font-medium">ได้รับเมื่อ</th>
-                    <th className="px-4 py-3 font-medium">หมดอายุ</th>
-                    <th className="px-4 py-3 font-medium">สถานะ</th>
-                    <th className="px-4 py-3 font-medium">แหล่งที่มา</th>
+                    <th className="px-3 py-2 font-medium">สมาชิก</th>
+                    <th className="px-3 py-2 font-medium">โค้ด</th>
+                    <th className="px-3 py-2 font-medium">ได้รับเมื่อ</th>
+                    <th className="px-3 py-2 font-medium">หมดอายุ</th>
+                    <th className="px-3 py-2 font-medium">สถานะ</th>
+                    <th className="px-3 py-2 font-medium">แหล่งที่มา</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,7 +199,7 @@ export default function CouponRedemptionsModal({
                       key={redemption.id}
                       className="border-b border-gray-200 last:border-b-0"
                     >
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <Link
                           href={`/dashboard/members/${redemption.user.id}`}
                           className="font-medium text-brown-100 hover:underline"
@@ -209,16 +210,16 @@ export default function CouponRedemptionsModal({
                           {displayValue(redemption.user.phone)}
                         </p>
                       </td>
-                      <td className="px-4 py-3 font-mono text-defualt-text">
+                      <td className="px-3 py-2 font-mono text-defualt-text">
                         {redemption.code}
                       </td>
-                      <td className="px-4 py-3 text-defualt-text">
+                      <td className="px-3 py-2 text-defualt-text">
                         {formatDateTime(redemption.acquired_date)}
                       </td>
-                      <td className="px-4 py-3 text-defualt-text">
+                      <td className="px-3 py-2 text-defualt-text">
                         {formatDateTime(redemption.expiration_date)}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-2">
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                             redemption.is_used
@@ -234,7 +235,7 @@ export default function CouponRedemptionsModal({
                           </p>
                         ) : null}
                       </td>
-                      <td className="px-4 py-3 text-defualt-text">
+                      <td className="px-3 py-2 text-defualt-text">
                         {formatPointSource(redemption.source.kind)}
                       </td>
                     </tr>
@@ -277,7 +278,7 @@ export default function CouponRedemptionsModal({
           <button
             type="button"
             onClick={closeModal}
-            className="w-full cursor-pointer rounded-4xl bg-gray-10 px-4 py-2.5 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80"
+            className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80"
           >
             ปิด
           </button>
@@ -289,7 +290,7 @@ export default function CouponRedemptionsModal({
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-gray-10 px-4 py-3">
+    <div className="rounded-xl bg-gray-10 px-3 py-2">
       <p className="text-xs text-gray-100">{label}</p>
       <p className="mt-1 text-lg font-semibold text-defualt-text">{value}</p>
     </div>

@@ -26,7 +26,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-brown-100";
+  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
@@ -197,7 +197,7 @@ export default function AppearanceTab({ ui }: { ui: PartnerUi }) {
   if (loadError) {
     return (
       <div className="p-6">
-        <div className="rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
+        <div className="rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">
           {loadError}
         </div>
         <button
@@ -222,13 +222,13 @@ export default function AppearanceTab({ ui }: { ui: PartnerUi }) {
       }}
     >
       {successMessage ? (
-        <div className="mb-6 rounded-xl bg-brown-yellow-5 px-4 py-3 text-sm text-brown-100">
+        <div className="mb-6 rounded-xl bg-brown-yellow-5 px-3 py-2 text-sm text-brown-100">
           {successMessage}
         </div>
       ) : null}
 
       {error ? (
-        <div className="mb-6 rounded-xl bg-red-100/10 px-4 py-3 text-sm text-red-100">
+        <div className="mb-6 rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">
           {error}
         </div>
       ) : null}
@@ -316,14 +316,14 @@ export default function AppearanceTab({ ui }: { ui: PartnerUi }) {
               type="button"
               onClick={() => void load()}
               disabled={busy}
-              className="cursor-pointer rounded-4xl bg-gray-10 px-5 py-2.5 text-sm font-medium text-gray-100 disabled:opacity-60"
+              className="cursor-pointer rounded-4xl bg-gray-10 px-3.5 py-1.5 text-sm font-medium text-gray-100 disabled:opacity-60"
             >
               รีเซ็ต
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="cursor-pointer rounded-4xl bg-brown-100 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:opacity-60"
+              className="cursor-pointer rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80 disabled:opacity-60"
             >
               {isSaving ? "กำลังบันทึก..." : "บันทึก"}
             </button>

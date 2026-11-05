@@ -5,6 +5,7 @@ import type { PortalPointRecord } from "@/services/members/types";
 import { getCurrencies } from "@/services/currencies/currencies";
 import type { PortalCurrency } from "@/services/currencies/types";
 import Select from "@/components/util/Select";
+import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
@@ -150,7 +151,7 @@ export default function UserPointHistory({
           <p className="text-sm text-gray-100">ไม่มีประวัติ point</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
+            <table className={`min-w-full text-left ${compactTableClassName}`}>
               <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
                 <tr>
                   <th className="px-3 py-3 font-medium">วันที่</th>
