@@ -6,6 +6,8 @@ import ZortoutMemberSyncProgress, {
 import MemberAvatar from "@/components/members/MemberAvatar";
 import ActionMenu from "@/components/util/ActionMenu";
 import { compactTableClassName } from "@/components/util/data-table";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import dialog from "@/components/util/dialog";
 import { getUsers } from "@/services/members/members";
@@ -161,6 +163,41 @@ export default function MembersPage() {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <TableExport
+            filename="members"
+            columns={[
+              { id: "name", label: "สมาชิก", value: (user) => user.display_name },
+              { id: "phone", label: "เบอร์โทร", value: (user) => displayValue(user.phone) },
+              { id: "email", label: "อีเมล", value: (user) => displayValue(user.email) },
+              { id: "line", label: "LINE ID", value: (user) => user.line_user_id },
+              { id: "tier", label: "ระดับ", value: (user) => user.tier?.name },
+              {
+                id: "point",
+                label: "Point",
+                value: (user) => getDefaultPointBalance(user.points),
+              },
+              {
+                id: "zortout",
+                label: "Zortout",
+                value: (user) => user.zortout?.sync_status || "",
+              },
+              {
+                id: "created",
+                label: "วันที่สมัคร",
+                value: (user) => formatDateTime(user.create_date),
+              },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getUsers({
+                  search,
+                  limit,
+                  offset: pageOffset,
+                });
+                return { rows: data.users, total: data.total };
+              })
+            }
+          />
           {zortoutReady ? (
             <button
               type="button"

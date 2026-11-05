@@ -1,6 +1,7 @@
 "use client";
 
 import { compactTableClassName } from "@/components/util/data-table";
+import TableExport from "@/components/util/TableExport";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { getTiers } from "@/services/tiers/tiers";
 import type { PortalTier } from "@/services/tiers/types";
@@ -62,6 +63,19 @@ export default function TiersPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          <TableExport
+            filename="tiers"
+            columns={[
+              { id: "name", label: "ชื่อระดับ", value: (tier) => tier.name },
+              { id: "code", label: "รหัสระดับ", value: (tier) => tier.code },
+              { id: "min", label: "ยอดใช้จ่ายขั้นต่ำ", value: (tier) => tier.min_spending },
+              { id: "max", label: "ยอดใช้จ่ายสูงสุด", value: (tier) => tier.max_spending },
+              { id: "convert", label: "อัตราแปลง Point", value: (tier) => tier.convert_points },
+              { id: "color", label: "สี", value: (tier) => tier.color },
+              { id: "show", label: "การแสดงผล", value: (tier) => (tier.is_show_in_ui ? "แสดงใน UI" : "ซ่อน") },
+            ]}
+            loadRows={async () => tiers}
+          />
           <button
             type="button"
             onClick={() => router.push("/dashboard/tier/join-rewards")}

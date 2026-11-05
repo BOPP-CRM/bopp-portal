@@ -1,6 +1,8 @@
 "use client";
 
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import ActionMenu from "@/components/util/ActionMenu";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
@@ -202,6 +204,51 @@ export default function TeamPage() {
         </div>
 
         <div className="flex flex-wrap gap-3">
+          {tab === "users" ? (
+            <TableExport
+              filename="team-users"
+              columns={[
+                { id: "name", label: "ชื่อ", value: (user) => user.name },
+                { id: "email", label: "อีเมล", value: (user) => user.email },
+                { id: "role", label: "Role", value: (user) => PORTAL_ROLE_LABELS[user.role] },
+                { id: "active", label: "สถานะ", value: (user) => (user.active ? "ใช้งาน" : "ปิดใช้งาน") },
+                { id: "created", label: "วันที่สร้าง", value: (user) => formatDateTime(user.create_date) },
+              ]}
+              loadRows={() =>
+                collectPages(async (pageOffset, limit) => {
+                  const data = await getTeamUsers({
+                    search,
+                    active: activeParam,
+                    limit,
+                    offset: pageOffset,
+                  });
+                  return { rows: data.teamUsers, total: data.total };
+                })
+              }
+            />
+          ) : (
+            <TableExport
+              filename="team-invites"
+              columns={[
+                { id: "name", label: "ชื่อ", value: (invite) => invite.name },
+                { id: "email", label: "อีเมล", value: (invite) => invite.email },
+                { id: "state", label: "สถานะ", value: (invite) => inviteStateLabel[invite.state] },
+                { id: "expires", label: "หมดอายุ", value: (invite) => formatDateTime(invite.expires_at) },
+                { id: "url", label: "ลิงก์", value: (invite) => invite.invite_url },
+                { id: "invited_by", label: "เชิญโดย", value: (invite) => invite.invited_by?.name },
+              ]}
+              loadRows={() =>
+                collectPages(async (pageOffset, limit) => {
+                  const data = await getTeamInvites({
+                    state: inviteStateFilter,
+                    limit,
+                    offset: pageOffset,
+                  });
+                  return { rows: data.invites, total: data.total };
+                })
+              }
+            />
+          )}
           <button
             type="button"
             onClick={() => router.push("/dashboard/team/invite")}

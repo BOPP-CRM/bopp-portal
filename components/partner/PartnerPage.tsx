@@ -2,6 +2,7 @@
 
 import AppearanceTab from "@/components/partner/AppearanceTab";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import TableExport from "@/components/util/TableExport";
 import { compactTableClassName } from "@/components/util/data-table";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { getPartner } from "@/services/partner/partner";
@@ -193,7 +194,21 @@ function AdsTab({ ads }: { ads: PartnerAd[] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="flex justify-end border-b border-gray-200 px-4 py-3">
+        <TableExport
+          filename="partner-ads"
+          columns={[
+            { id: "title", label: "หัวข้อ", value: (ad) => ad.title },
+            { id: "message", label: "ข้อความ", value: (ad) => ad.message },
+            { id: "action", label: "Action", value: (ad) => displayValue(ad.action) },
+            { id: "start", label: "เริ่ม", value: (ad) => formatDateTime(ad.start_date) },
+            { id: "end", label: "สิ้นสุด", value: (ad) => formatDateTime(ad.end_date) },
+          ]}
+          loadRows={async () => ads}
+        />
+      </div>
+      <div className="overflow-x-auto">
       <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
           <tr>
@@ -237,6 +252,7 @@ function AdsTab({ ads }: { ads: PartnerAd[] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -247,7 +263,21 @@ function TiersTab({ tiers }: { tiers: PartnerDetail["tier"] }) {
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      <div className="flex justify-end border-b border-gray-200 px-4 py-3">
+        <TableExport
+          filename="partner-tiers"
+          columns={[
+            { id: "name", label: "ระดับ", value: (tier) => tier.name },
+            { id: "code", label: "รหัส", value: (tier) => tier.code },
+            { id: "min", label: "ยอดใช้จ่ายขั้นต่ำ", value: (tier) => tier.min_spending },
+            { id: "max", label: "ยอดใช้จ่ายสูงสุด", value: (tier) => tier.max_spending },
+            { id: "color", label: "สี", value: (tier) => tier.color },
+          ]}
+          loadRows={async () => tiers}
+        />
+      </div>
+      <div className="overflow-x-auto">
       <table className={`min-w-full text-left ${compactTableClassName}`}>
         <thead className="border-b border-gray-200 bg-gray-10 text-gray-100">
           <tr>
@@ -294,6 +324,7 @@ function TiersTab({ tiers }: { tiers: PartnerDetail["tier"] }) {
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { getZortoutWebhookLogs } from "@/services/zortout/zortout";
 import type { ZortoutWebhookLog } from "@/services/zortout/types";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { compactTableClassName } from "@/components/util/data-table";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
@@ -53,7 +55,29 @@ export default function ZortoutWebhookLogs() {
         <h3 className="text-sm font-semibold text-defualt-text">
           ประวัติ Webhook
         </h3>
-        <p className="text-xs text-gray-100">{formatNumber(total)} รายการ</p>
+        <div className="flex items-center gap-3">
+          <p className="text-xs text-gray-100">{formatNumber(total)} รายการ</p>
+          <TableExport
+            filename="zortout-webhook-logs"
+            columns={[
+              { id: "received", label: "เวลา", value: (log) => formatDateTime(log.received_at) },
+              { id: "method", label: "Method", value: (log) => displayValue(log.method) },
+              { id: "order", label: "เลขที่", value: (log) => displayValue(log.order_number) },
+              { id: "amount", label: "มูลค่า", value: (log) => log.amount },
+              { id: "status", label: "ผลลัพธ์", value: (log) => displayValue(log.result_status) },
+              { id: "http", label: "HTTP", value: (log) => log.http_status },
+              { id: "member", label: "สมาชิก", value: (log) => (log.member ? log.member.display_name : displayValue(log.customer_name)) },
+              { id: "points", label: "Reward Point", value: (log) => log.reward_points },
+              { id: "message", label: "ข้อความ", value: (log) => displayValue(log.message) },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getZortoutWebhookLogs({ limit, offset: pageOffset });
+                return { rows: data.logs, total: data.total };
+              }, 100)
+            }
+          />
+        </div>
       </div>
 
       {loading ? (
