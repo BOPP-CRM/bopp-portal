@@ -1,6 +1,8 @@
 "use client";
 
 import FilterGroup from "@/components/util/FilterGroup";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
@@ -129,14 +131,40 @@ export default function RedeemQrcodesPage() {
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/redeem-qrcodes/new")}
-          className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
-        >
-          <Plus className="size-4" />
-          สร้าง Redeem QR
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <TableExport
+            filename="redeem-qrcodes"
+            columns={[
+              { id: "name", label: "ชื่อ", value: (qrcode) => qrcode.name },
+              { id: "reward", label: "รางวัล", value: (qrcode) => formatReward(qrcode) },
+              { id: "type", label: "ประเภท", value: (qrcode) => formatType(qrcode.type) },
+              { id: "per_user", label: "จำกัดต่อคน", value: (qrcode) => qrcode.limit_per_user },
+              { id: "per_qr", label: "จำกัดต่อ QR", value: (qrcode) => qrcode.limit_per_qr },
+              { id: "expires", label: "หมดอายุ", value: (qrcode) => formatDateTime(qrcode.expiration_date) },
+              { id: "active", label: "สถานะ", value: (qrcode) => (isActive(qrcode) ? "ใช้งาน" : "ไม่ใช้งาน") },
+              { id: "code", label: "Code", value: (qrcode) => qrcode.code },
+              { id: "url", label: "Redeem URL", value: (qrcode) => qrcode.redeem_url },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getRedeemQrcodes({
+                  active: activeParam,
+                  limit,
+                  offset: pageOffset,
+                });
+                return { rows: data.redeemQrcodes, total: data.total };
+              })
+            }
+          />
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/redeem-qrcodes/new")}
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+          >
+            <Plus className="size-4" />
+            สร้าง Redeem QR
+          </button>
+        </div>
       </div>
 
       {successMessage ? (

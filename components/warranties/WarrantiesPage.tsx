@@ -3,6 +3,8 @@
 import StatusBadge from "@/components/warranties/StatusBadge";
 import MemberAvatar from "@/components/members/MemberAvatar";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
@@ -123,6 +125,31 @@ export default function WarrantiesPage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-3 md:max-w-3xl md:justify-end">
+          <TableExport
+            filename="warranties"
+            columns={[
+              { id: "serial", label: "Serial", value: (item) => item.serial_number },
+              { id: "receipt", label: "เลขใบเสร็จ", value: (item) => item.receipt_number },
+              { id: "product", label: "สินค้า", value: (item) => item.product?.name },
+              { id: "member", label: "สมาชิก", value: (item) => item.user.display_name },
+              { id: "phone", label: "เบอร์โทร", value: (item) => displayValue(item.user.phone) },
+              { id: "contributor", label: "ช่องทาง", value: (item) => item.contributor?.name },
+              { id: "status", label: "สถานะ", value: (item) => item.status?.label },
+              { id: "purchase", label: "วันที่ซื้อ", value: (item) => formatDateTime(item.purchase_date) },
+              { id: "submitted", label: "วันที่ส่ง", value: (item) => formatDateTime(item.submitted_date) },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getWarranties({
+                  status_id: statusParam,
+                  search,
+                  limit,
+                  offset: pageOffset,
+                });
+                return { rows: data.warranties, total: data.total };
+              })
+            }
+          />
           <form onSubmit={handleSearch} className="relative min-w-72 flex-1 md:min-w-96">
             <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-100" />
             <input

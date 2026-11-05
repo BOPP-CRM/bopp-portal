@@ -1,6 +1,7 @@
 "use client";
 
 import ActionMenu from "@/components/util/ActionMenu";
+import TableExport from "@/components/util/TableExport";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
@@ -86,6 +87,22 @@ export default function CouponsPage() {
           </p>
         </div>
 
+        <div className="flex flex-wrap gap-3">
+        <TableExport
+          filename="coupons"
+          columns={[
+            { id: "name", label: "คูปอง", value: (coupon) => coupon.name },
+            { id: "value", label: "มูลค่า", value: (coupon) => coupon.value },
+            { id: "currency", label: "สกุล Point", value: (coupon) => coupon.currency_name },
+            { id: "start", label: "เริ่ม", value: (coupon) => formatDateTime(coupon.start_time) },
+            { id: "end", label: "สิ้นสุด", value: (coupon) => formatDateTime(coupon.end_time) },
+            { id: "codes", label: "โค้ดทั้งหมด", value: (coupon) => coupon.total_code_count },
+            { id: "available", label: "โค้ดคงเหลือ", value: (coupon) => coupon.available_code_count },
+            { id: "redeemed", label: "แลกแล้ว", value: (coupon) => coupon.redeemed_count },
+            { id: "show", label: "แสดงใน UI", value: (coupon) => (coupon.is_show_in_ui ? "ใช่" : "ไม่") },
+          ]}
+          loadRows={async () => coupons}
+        />
         <button
           type="button"
           onClick={() => router.push("/dashboard/coupons/new")}
@@ -94,6 +111,7 @@ export default function CouponsPage() {
           <Plus className="size-4" />
           เพิ่มคูปอง
         </button>
+        </div>
       </div>
 
       {successMessage ? (

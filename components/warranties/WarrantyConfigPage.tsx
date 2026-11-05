@@ -3,6 +3,7 @@
 import StatusBadge from "@/components/warranties/StatusBadge";
 import ActionMenu from "@/components/util/ActionMenu";
 import { compactTableClassName } from "@/components/util/data-table";
+import TableExport from "@/components/util/TableExport";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   deleteWarrantyContributor,
@@ -116,6 +117,17 @@ export default function WarrantyConfigPage() {
             onAction={() =>
               router.push("/dashboard/warranties/config/contributor/new")
             }
+            extra={
+              <TableExport
+                filename="warranty-contributors"
+                columns={[
+                  { id: "name", label: "ชื่อ", value: (item) => item.name },
+                  { id: "sequence", label: "ลำดับ", value: (item) => item.sequence ?? 10 },
+                  { id: "active", label: "สถานะ", value: (item) => (item.active === false ? "ปิด" : "ใช้งาน") },
+                ]}
+                loadRows={async () => contributors}
+              />
+            }
           >
             {contributors.length === 0 ? (
               <EmptyState text="ยังไม่มีช่องทางการซื้อ" />
@@ -152,6 +164,20 @@ export default function WarrantyConfigPage() {
             actionLabel="เพิ่มสถานะ"
             onAction={() =>
               router.push("/dashboard/warranties/config/status/new")
+            }
+            extra={
+              <TableExport
+                filename="warranty-statuses"
+                columns={[
+                  { id: "code", label: "Code", value: (item) => item.code },
+                  { id: "label", label: "Label", value: (item) => item.label },
+                  { id: "active", label: "สถานะ", value: (item) => (item.active === false ? "ปิด" : "ใช้งาน") },
+                  { id: "default", label: "Default", value: (item) => (item.is_default ? "ใช่" : "ไม่") },
+                  { id: "sequence", label: "ลำดับ", value: (item) => item.sequence ?? 10 },
+                  { id: "color", label: "สี", value: (item) => item.color || "" },
+                ]}
+                loadRows={async () => statuses}
+              />
             }
           >
             {statuses.length === 0 ? (
@@ -193,12 +219,14 @@ function ConfigSection({
   description,
   actionLabel,
   onAction,
+  extra,
   children,
 }: {
   title: string;
   description: string;
   actionLabel: string;
   onAction: () => void;
+  extra?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
@@ -208,7 +236,9 @@ function ConfigSection({
           <h2 className="text-lg font-semibold text-defualt-text">{title}</h2>
           <p className="mt-1 text-sm text-gray-100">{description}</p>
         </div>
-        <button
+        <div className="flex flex-wrap items-center gap-3">
+          {extra}
+          <button
           type="button"
           onClick={onAction}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
@@ -216,6 +246,7 @@ function ConfigSection({
           <Plus className="size-4" />
           {actionLabel}
         </button>
+        </div>
       </div>
       <div className="p-4 md:p-5">{children}</div>
     </section>

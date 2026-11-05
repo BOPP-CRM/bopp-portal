@@ -16,6 +16,8 @@ import {
   useZortoutSaleSyncJob,
 } from "@/components/sales/useZortoutSaleSyncJob";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { useApp } from "@/providers/app-provider";
@@ -33,6 +35,8 @@ import type {
   SaleSource,
   SaleStatus,
 } from "@/services/sales/types";
+import { SALE_STATUS_LABELS } from "@/services/sales/types";
+import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { displayValue, formatNumber } from "@/utils/format";
 import { isAdmin } from "@/utils/roles";
@@ -282,6 +286,32 @@ export default function SalesPage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center justify-end gap-3">
+          <TableExport
+            filename="sales"
+            columns={[
+              { id: "order", label: "เลขที่", value: (sale) => sale.order_number || sale.external_id },
+              { id: "source", label: "แหล่งที่มา", value: (sale) => sale.source_label },
+              { id: "status", label: "สถานะ", value: (sale) => SALE_STATUS_LABELS[sale.status] },
+              { id: "member", label: "สมาชิก", value: (sale) => sale.user ? sale.user.display_name : displayValue(sale.customer_name) },
+              { id: "phone", label: "เบอร์โทร", value: (sale) => displayValue(sale.user ? sale.user.phone : sale.customer_phone) },
+              { id: "amount", label: "มูลค่า", value: (sale) => sale.amount },
+              { id: "payment", label: "ยอดชำระ", value: (sale) => sale.payment_amount },
+              { id: "payment_status", label: "สถานะชำระ", value: (sale) => displayValue(sale.payment_status) },
+              { id: "date", label: "วันที่", value: (sale) => formatDateTime(sale.order_date) },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getSales({
+                  status: statusParam,
+                  source: sourceParam,
+                  search,
+                  limit,
+                  offset: pageOffset,
+                });
+                return { rows: data.sales, total: data.total };
+              })
+            }
+          />
           {canSync ? (
             <button
               type="button"

@@ -6,6 +6,8 @@ import type {
   CouponRedemptionSummary,
 } from "@/services/coupons/types";
 import Select from "@/components/util/Select";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { formatDateTime } from "@/utils/datetime";
@@ -115,12 +117,43 @@ export default function CouponRedemptionsModal({
             </h1>
             <p className="mt-1 text-sm text-gray-100">{couponName}</p>
           </div>
+          <div className="flex w-full flex-col gap-3 md:w-auto md:items-end">
+          <TableExport
+            filename="coupon-redemptions"
+            columns={[
+              { id: "code", label: "โค้ด", value: (item) => item.code },
+              { id: "member", label: "สมาชิก", value: (item) => item.user.display_name },
+              { id: "phone", label: "เบอร์โทร", value: (item) => displayValue(item.user.phone) },
+              { id: "value", label: "มูลค่า", value: (item) => item.value },
+              { id: "acquired", label: "วันที่แลก", value: (item) => formatDateTime(item.acquired_date) },
+              { id: "expires", label: "หมดอายุ", value: (item) => formatDateTime(item.expiration_date) },
+              { id: "used", label: "สถานะ", value: (item) => (item.is_used ? "ใช้แล้ว" : "ยังไม่ใช้") },
+              { id: "used_date", label: "วันที่ใช้", value: (item) => formatDateTime(item.used_date) },
+              { id: "source", label: "ที่มา", value: (item) => formatPointSource(item.source.kind) },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getCouponRedemptions(couponId, {
+                  limit,
+                  offset: pageOffset,
+                  is_used:
+                    usedFilter === "all"
+                      ? undefined
+                      : usedFilter === "used"
+                        ? true
+                        : false,
+                });
+                return { rows: data.redemptions, total: data.total };
+              })
+            }
+          />
           <div className="w-full md:w-48">
             <Select
               value={usedFilter}
               options={usedOptions}
               onChange={setUsedFilter}
             />
+          </div>
           </div>
         </div>
 

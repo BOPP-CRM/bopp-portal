@@ -5,6 +5,8 @@ import type { PortalPointRecord } from "@/services/members/types";
 import { getCurrencies } from "@/services/currencies/currencies";
 import type { PortalCurrency } from "@/services/currencies/types";
 import Select from "@/components/util/Select";
+import TableExport from "@/components/util/TableExport";
+import { collectPages } from "@/utils/csv";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { formatDateTime } from "@/utils/datetime";
@@ -119,9 +121,34 @@ export default function UserPointHistory({
   return (
     <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-lg font-semibold text-defualt-text">
-          ประวัติ Point
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-lg font-semibold text-defualt-text">
+            ประวัติ Point
+          </h2>
+          <TableExport
+            filename="point-history"
+            columns={[
+              { id: "date", label: "วันที่", value: (point) => formatDateTime(point.given_date) },
+              { id: "name", label: "รายการ", value: (point) => point.name },
+              { id: "type", label: "ประเภท", value: (point) => formatPointType(point.type) },
+              { id: "value", label: "จำนวน", value: (point) => point.value },
+              { id: "currency", label: "สกุล", value: (point) => point.currency.name },
+              { id: "source", label: "ที่มา", value: (point) => formatPointSource(point.source.kind) },
+              { id: "note", label: "หมายเหตุ", value: (point) => point.admin_note || "" },
+            ]}
+            loadRows={() =>
+              collectPages(async (pageOffset, limit) => {
+                const data = await getUserPoints(userId, {
+                  limit,
+                  offset: pageOffset,
+                  currency_id: currencyId === "all" ? undefined : currencyId,
+                  type: typeFilter === "all" ? undefined : toApiPointType(typeFilter),
+                });
+                return { rows: data.points, total: data.total };
+              })
+            }
+          />
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Select
             value={currencyId}

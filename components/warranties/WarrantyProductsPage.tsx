@@ -1,6 +1,7 @@
 "use client";
 
 import { compactTableClassName } from "@/components/util/data-table";
+import TableExport from "@/components/util/TableExport";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   formatSnPatterns,
@@ -73,7 +74,20 @@ export default function WarrantyProductsPage() {
           </p>
         </div>
 
-        <button
+        <div className="flex flex-wrap gap-3">
+          <TableExport
+            filename="warranty-products"
+            columns={[
+              { id: "name", label: "สินค้า", value: (product) => product.name },
+              { id: "sku", label: "SKU", value: (product) => product.sku || "" },
+              { id: "cost", label: "ต้นทุน", value: (product) => product.cost_price },
+              { id: "sell", label: "ราคาขาย", value: (product) => product.sell_price },
+              { id: "patterns", label: "รูปแบบ SN", value: (product) => formatSnPatterns(product.sn_patterns) },
+              { id: "active", label: "สถานะ", value: (product) => (product.active === false ? "ปิด" : "ใช้งาน") },
+            ]}
+            loadRows={async () => products}
+          />
+          <button
           type="button"
           onClick={() => router.push("/dashboard/warranties/products/new")}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
@@ -81,6 +95,7 @@ export default function WarrantyProductsPage() {
           <Plus className="size-4" />
           เพิ่มสินค้า
         </button>
+        </div>
       </div>
 
       {successMessage ? (
