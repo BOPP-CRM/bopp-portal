@@ -131,9 +131,18 @@ export default function ReceiptDetailModal({
   const amountNumber = Number(amount);
   const baseConvertPoints =
     receipt?.tier.convert_points ?? receipt?.tier_convert_points ?? 0;
+  const earnChannel =
+    receipt?.earn_channel === "zortout" || receipt?.earn_channel === "omisell"
+      ? receipt.earn_channel
+      : "receipt";
+  const earnChannelSkipLabel = {
+    receipt: "ไม่ใช้กับใบเสร็จ",
+    zortout: "ไม่ใช้กับ Zortout",
+    omisell: "ไม่ใช้กับ Omisell",
+  }[earnChannel];
   const receiptMultiplierEnabled = appliesDayPointMultiplier(
     tierDetail,
-    "receipt",
+    earnChannel,
   );
   const configuredDayMultiplier = getDayPointMultiplier(tierDetail);
   const dayMultiplier = receiptMultiplierEnabled
@@ -472,7 +481,7 @@ export default function ReceiptDetailModal({
                     value={
                       receiptMultiplierEnabled
                         ? `x${formatNumber(configuredDayMultiplier)}`
-                        : `x${formatNumber(configuredDayMultiplier)} (ไม่ใช้กับใบเสร็จ)`
+                        : `x${formatNumber(configuredDayMultiplier)} (${earnChannelSkipLabel})`
                     }
                   />
                 ) : null}
