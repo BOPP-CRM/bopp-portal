@@ -165,7 +165,7 @@ export default function Select<T extends string | number>({
         className={`flex w-full items-center justify-between rounded-xl border bg-white px-3 py-2 text-left text-sm transition outline-none ${
           isOpen
             ? "border-brown-100 ring-2 ring-brown-100/20"
-            : "border-gray-200 hover:border-gray-50"
+            : "border-input-border hover:border-gray-50"
         }`}
       >
         <span

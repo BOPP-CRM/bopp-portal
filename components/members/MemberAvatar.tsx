@@ -9,7 +9,7 @@ type MemberAvatarProps = {
 };
 
 const SIZE_CLASS = {
-  xs: "size-7 text-[11px]",
+  xs: "size-8 text-xs",
   sm: "size-8 text-xs",
   md: "size-14 text-lg",
   lg: "size-16 text-lg",

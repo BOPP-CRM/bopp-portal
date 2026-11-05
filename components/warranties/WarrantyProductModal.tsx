@@ -1,9 +1,18 @@
 "use client";
 
 import { readFileAsBase64 } from "@/utils/file";
+import { handleError } from "@/utils/errors";
 import { getProxiedImageUrl } from "@/utils/image";
+import {
+  createWarrantyProduct,
+  getWarrantyProducts,
+  updateWarrantyProduct,
+} from "@/services/warranties/warranties";
 import type { WarrantyProduct } from "@/services/warranties/types";
-import { Plus, Trash2, X } from "lucide-react";
+import { FormFieldsSkeleton } from "@/components/util/Skeleton";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const inputClassName =
@@ -20,19 +29,17 @@ export type WarrantyProductFormPayload = {
   sn_patterns: string[];
 };
 
-type WarrantyProductModalProps = {
-  product: WarrantyProduct | null;
-  isSubmitting: boolean;
-  onClose: () => void;
-  onSubmit: (payload: WarrantyProductFormPayload) => Promise<void>;
+type WarrantyProductPageProps = {
+  productId: number | null;
 };
 
 export default function WarrantyProductModal({
-  product,
-  isSubmitting,
-  onClose,
-  onSubmit,
-}: WarrantyProductModalProps) {
+  productId,
+}: WarrantyProductPageProps) {
+  const router = useRouter();
+  const [product, setProduct] = useState<WarrantyProduct | null>(null);
+  const [loading, setLoading] = useState(productId !== null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [productImageBase64, setProductImageBase64] = useState<string | null>(
     null,
@@ -42,6 +49,27 @@ export default function WarrantyProductModal({
   );
   const [productImageFilename, setProductImageFilename] = useState("");
   const [snPatterns, setSnPatterns] = useState<string[]>([""]);
+
+  useEffect(() => {
+    if (productId === null) return;
+    let cancelled = false;
+    void getWarrantyProducts(true)
+      .then((items) => {
+        if (cancelled) return;
+        const found = items.find((item) => item.id === productId) ?? null;
+        setProduct(found);
+        if (!found) setError("ไม่พบสินค้า");
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(handleError(loadError).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
 
   useEffect(() => {
     setProductImageBase64(null);
@@ -61,7 +89,7 @@ export default function WarrantyProductModal({
     if (productImagePreview?.startsWith("blob:")) {
       URL.revokeObjectURL(productImagePreview);
     }
-    onClose();
+    router.push("/dashboard/warranties/products");
   };
 
   const handleProductImageChange = async (file: File | null) => {
@@ -103,45 +131,72 @@ export default function WarrantyProductModal({
       .map((pattern) => pattern.trim())
       .filter(Boolean);
 
+    setIsSubmitting(true);
     setError(null);
-    await onSubmit({
-      name,
-      description:
-        String(formData.get("description") || "").trim() || undefined,
-      sku: String(formData.get("sku") || "").trim() || undefined,
-      cost_price: Number(formData.get("cost_price") || 0),
-      sell_price: Number(formData.get("sell_price") || 0),
-      active: formData.get("active") === "on",
-      sn_patterns: normalizedPatterns,
-      ...(productImageBase64 ? { image_base64: productImageBase64 } : {}),
-    });
+    try {
+      if (product) {
+        await updateWarrantyProduct(product.id, {
+          name,
+          description:
+            String(formData.get("description") || "").trim() || undefined,
+          sku: String(formData.get("sku") || "").trim() || undefined,
+          cost_price: Number(formData.get("cost_price") || 0),
+          sell_price: Number(formData.get("sell_price") || 0),
+          active: formData.get("active") === "on",
+          sn_patterns: normalizedPatterns,
+          ...(productImageBase64 ? { image_base64: productImageBase64 } : {}),
+        });
+      } else {
+        await createWarrantyProduct({
+          name,
+          description:
+            String(formData.get("description") || "").trim() || undefined,
+          sku: String(formData.get("sku") || "").trim() || undefined,
+          cost_price: Number(formData.get("cost_price") || 0),
+          sell_price: Number(formData.get("sell_price") || 0),
+          active: formData.get("active") === "on",
+          sn_patterns: normalizedPatterns,
+          ...(productImageBase64 ? { image_base64: productImageBase64 } : {}),
+        });
+      }
+      router.push("/dashboard/warranties/products?saved=1");
+    } catch (submitError) {
+      setError(handleError(submitError).message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4"
-      onClick={handleClose}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h2 className="text-xl font-bold text-defualt-text">
-            {product ? "แก้ไขสินค้า" : "เพิ่มสินค้า"}
-          </h2>
-          <button
-            type="button"
-            onClick={handleClose}
-            className="cursor-pointer rounded-full p-1 text-gray-100 hover:bg-gray-10"
-            aria-label="ปิด"
-          >
-            <X className="size-5" />
-          </button>
+  if (loading) {
+    return (
+      <div className="p-3 md:p-5">
+        <Link
+          href="/dashboard/warranties/products"
+          className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
+        >
+          <ArrowLeft className="size-4" />
+          กลับไปสินค้ารับประกัน
+        </Link>
+        <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
+          <FormFieldsSkeleton fields={5} />
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/warranties/products"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
+      >
+        <ArrowLeft className="size-4" />
+        กลับไปสินค้ารับประกัน
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
+        <h1 className="text-xl font-bold text-defualt-text">
+          {product ? "แก้ไขสินค้า" : "เพิ่มสินค้า"}
+        </h1>
 
         {error ? (
           <div className="mt-4 rounded-xl bg-red-100/10 px-3 py-2 text-sm text-red-100">

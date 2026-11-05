@@ -4,6 +4,7 @@ import {
   buildCouponUpdatePayload,
   createCoupon,
   downloadCouponCodesImportTemplate,
+  getCoupon,
   updateCoupon,
   type CreateCouponRequest,
   type PortalCoupon,
@@ -11,24 +12,26 @@ import {
 import { getCurrencies } from "@/services/currencies/currencies";
 import type { PortalCurrency } from "@/services/currencies/types";
 import Select from "@/components/util/Select";
+import { FormFieldsSkeleton } from "@/components/util/Skeleton";
 import { handleError } from "@/utils/errors";
 import { toApiDateTime, toDatetimeLocalValue } from "@/utils/datetime";
 import { readFileAsBase64 } from "@/utils/file";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-const MODAL_EXIT_MS = 250;
-const MAX_CODE_BATCH = 2000;
+type CouponFormPageProps = {
+  couponId: number | null;
+};
+
+type CodeSourceMode = "generate" | "import";
+
 const COUPON_CSV_TEMPLATE_PREVIEW = `code
 example_code_1
 example_code_2`;
 
-type CouponFormModalProps = {
-  coupon?: PortalCoupon | null;
-  onClose: () => void;
-  onSuccess: () => void;
-};
-
-type CodeSourceMode = "generate" | "import";
+const MAX_CODE_BATCH = 2000;
 
 type CouponFormState = {
   name: string;
@@ -88,24 +91,46 @@ function toFormState(coupon: PortalCoupon): CouponFormState {
   };
 }
 
-export default function CouponFormModal({
-  coupon,
-  onClose,
-  onSuccess,
-}: CouponFormModalProps) {
-  const isEdit = Boolean(coupon);
-  const [isClosing, setIsClosing] = useState(false);
+export default function CouponFormModal({ couponId }: CouponFormPageProps) {
+  const router = useRouter();
+  const isEdit = couponId !== null;
+  const [coupon, setCoupon] = useState<PortalCoupon | null>(null);
+  const [loading, setLoading] = useState(isEdit);
   const [currencies, setCurrencies] = useState<PortalCurrency[]>([]);
   const [importFileBase64, setImportFileBase64] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [imageFilename, setImageFilename] = useState("");
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
-  const [form, setForm] = useState<CouponFormState>(
-    coupon ? toFormState(coupon) : emptyForm(),
-  );
+  const [form, setForm] = useState<CouponFormState>(emptyForm());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (couponId === null) return;
+
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    void getCoupon(couponId)
+      .then((data) => {
+        if (cancelled) return;
+        setCoupon(data);
+        setForm(toFormState(data));
+      })
+      .catch((loadError) => {
+        if (cancelled) return;
+        setError(handleError(loadError).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [couponId]);
 
   useEffect(() => {
     void getCurrencies()
@@ -179,25 +204,11 @@ export default function CouponFormModal({
     return Object.keys(updatePayload).length > 0;
   }, [coupon, form, imageBase64]);
 
-  const isSaveDisabled = isSubmitting || (isEdit && !hasChanges);
+  const isSaveDisabled = isSubmitting || loading || (isEdit && !hasChanges);
 
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
+  const finish = () => {
+    router.push("/dashboard/coupons?saved=1");
   };
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isSubmitting]);
 
   const updateField = <K extends keyof CouponFormState>(
     key: K,
@@ -369,8 +380,7 @@ export default function CouponFormModal({
         await createCoupon(payload);
       }
 
-      onSuccess();
-      closeModal();
+      finish();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -379,38 +389,31 @@ export default function CouponFormModal({
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={isSubmitting ? undefined : closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="coupon-form-title"
-        className={`max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/coupons"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
-        <h2
-          id="coupon-form-title"
-          className="text-xl font-bold text-defualt-text"
-        >
+        <ArrowLeft className="size-4" />
+        กลับไปจัดการคูปอง
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
+        <h1 id="coupon-form-title" className="text-xl font-bold text-defualt-text">
           {isEdit ? "แก้ไขคูปอง" : "เพิ่มคูปอง"}
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-gray-100">
           {isEdit
             ? "แก้ไขรายละเอียดคูปอง (ไม่สามารถเปลี่ยนชุดโค้ดได้)"
             : "สร้างคูปองใหม่ด้วยการ generate หรือนำเข้า CSV"}
         </p>
 
+        {loading ? (
+          <div className="mt-5">
+            <FormFieldsSkeleton fields={6} />
+          </div>
+        ) : error && isEdit && !coupon ? (
+          <p className="mt-5 text-sm text-red-100">{error}</p>
+        ) : (
         <form onSubmit={handleSubmit} className="mt-5 space-y-5">
           <Section title="ข้อมูลทั่วไป">
             <div className="grid gap-4 md:grid-cols-2">
@@ -487,8 +490,8 @@ export default function CouponFormModal({
                   onChange={(event) =>
                     updateField("termAndCondition", event.target.value)
                   }
-                  rows={3}
-                  className={inputClassName}
+                  rows={10}
+                  className={`${inputClassName} min-h-52 resize-y`}
                 />
               </Field>
             </div>
@@ -654,14 +657,12 @@ export default function CouponFormModal({
           {error ? <p className="text-sm text-red-100">{error}</p> : null}
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={closeModal}
-              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
+            <Link
+              href="/dashboard/coupons"
+              className="inline-flex w-full items-center justify-center rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80"
             >
               ยกเลิก
-            </button>
+            </Link>
             <button
               type="submit"
               disabled={isSaveDisabled}
@@ -671,6 +672,7 @@ export default function CouponFormModal({
             </button>
           </div>
         </form>
+        )}
       </div>
     </div>
   );

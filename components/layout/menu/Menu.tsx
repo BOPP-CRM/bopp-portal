@@ -22,7 +22,7 @@ import Profile from "./Profile";
 import { useApp } from "@/providers/app-provider";
 import { canAccessPath, getUserRole, isAdmin } from "@/utils/roles";
 
-const iconClassName = "size-4 shrink-0";
+const iconClassName = "size-5 shrink-0";
 
 type MenuLeaf = {
   icon: React.ReactNode;
@@ -225,7 +225,6 @@ export default function Menu() {
         >
           <MenuIcon className="size-5 text-gray-100" />
         </button>
-        <Profile />
       </header>
 
       <div
@@ -235,10 +234,10 @@ export default function Menu() {
       />
 
       <div
-        className={`fixed inset-y-0 left-0 z-50 min-h-screen w-66 shrink-0 overflow-y-auto bg-white shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out -translate-x-full md:relative md:h-full md:translate-x-0 md:transition-[width]${isMobileOpen ? " translate-x-0" : ""}${isCollapsed ? " md:w-16" : " md:w-60"}`}
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-66 shrink-0 flex-col overflow-hidden bg-white shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] transition-all duration-300 ease-in-out -translate-x-full md:relative md:translate-x-0 md:overflow-visible md:transition-[width]${isMobileOpen ? " translate-x-0" : ""}${isCollapsed ? " md:w-16" : " md:w-60"}`}
       >
         <div
-          className={`flex items-center justify-between gap-2 p-4 pb-5 transition-all duration-300 ease-in-out${isCollapsed ? " md:flex-col md:justify-center md:gap-3 md:px-2 md:py-4" : ""}`}
+          className={`flex shrink-0 items-center justify-between gap-2 px-3 py-3 transition-all duration-300 ease-in-out${isCollapsed ? " md:flex-col md:justify-center md:gap-2 md:px-2 md:py-3" : ""}`}
         >
           {me?.partner.logo_url && (
             <img
@@ -260,7 +259,7 @@ export default function Menu() {
           </button>
         </div>
 
-        <nav className="px-1 pb-6">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
           {visibleGroups.map((group) => (
             <MenuSection
               key={group.id}
@@ -273,6 +272,12 @@ export default function Menu() {
             />
           ))}
         </nav>
+
+        <div
+          className={`shrink-0 border-t border-gray-200 px-2 py-2${isCollapsed ? " md:px-1" : ""}`}
+        >
+          <Profile variant="sidebar" collapsed={isCollapsed} />
+        </div>
       </div>
     </>
   );

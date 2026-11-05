@@ -42,7 +42,7 @@ export default function MenuSection({
 
   if (isCollapsed) {
     return (
-      <div className="space-y-0.5 py-1">
+      <div className="py-0.5">
         {items.map((item) => (
           <MenuItem
             key={item.path}
@@ -59,14 +59,14 @@ export default function MenuSection({
   }
 
   return (
-    <div className="mb-1">
+    <div className="mt-3 first:mt-0">
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between gap-2 px-5 py-2 text-left cursor-pointer"
+        className="flex w-full cursor-pointer items-center justify-between gap-2 px-4 py-1 text-left"
         aria-expanded={isOpen}
       >
-        <span className="text-[11px] font-semibold tracking-wide text-gray-100 uppercase">
+        <span className="text-xs font-semibold tracking-wide text-gray-100 uppercase">
           {label}
         </span>
         <ChevronDown
@@ -78,7 +78,7 @@ export default function MenuSection({
         className={`grid transition-[grid-template-rows] duration-200 ease-in-out${isOpen ? " grid-rows-[1fr]" : " grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
-          <div className="space-y-0.5 pb-1">
+          <div className="pb-0.5">
             {items.map((item) => (
               <MenuItem
                 key={item.path}

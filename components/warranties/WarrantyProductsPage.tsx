@@ -2,33 +2,28 @@
 
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
-import WarrantyProductModal, {
+import {
   formatSnPatterns,
   ProductImage,
-  type WarrantyProductFormPayload,
 } from "@/components/warranties/WarrantyProductModal";
 import {
-  createWarrantyProduct,
   getWarrantyProducts,
-  updateWarrantyProduct,
   type WarrantyProduct,
 } from "@/services/warranties/warranties";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
 import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function WarrantyProductsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<WarrantyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [editingProduct, setEditingProduct] = useState<WarrantyProduct | null>(
-    null,
-  );
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadProducts = useCallback(async () => {
     setError(null);
@@ -47,45 +42,17 @@ export default function WarrantyProductsPage() {
     void loadProducts();
   }, [loadProducts]);
 
-  const showSuccess = (message: string) => {
-    setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
+  useEffect(() => {
+    if (searchParams.get("saved") !== "1") return;
+    setSuccessMessage("บันทึกข้อมูลสำเร็จ");
+    router.replace("/dashboard/warranties/products");
+  }, [router, searchParams]);
 
-  const openCreateModal = () => {
-    setEditingProduct(null);
-    setIsModalOpen(true);
-  };
-
-  const openEditModal = (product: WarrantyProduct) => {
-    setEditingProduct(product);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingProduct(null);
-  };
-
-  const handleSubmit = async (payload: WarrantyProductFormPayload) => {
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      if (editingProduct) {
-        await updateWarrantyProduct(editingProduct.id, payload);
-      } else {
-        await createWarrantyProduct(payload);
-      }
-      closeModal();
-      await loadProducts();
-      showSuccess("บันทึกข้อมูลสำเร็จ");
-    } catch (submitError) {
-      setError(handleError(submitError).message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   return (
     <div className="p-3 md:p-5">
@@ -108,7 +75,7 @@ export default function WarrantyProductsPage() {
 
         <button
           type="button"
-          onClick={openCreateModal}
+          onClick={() => router.push("/dashboard/warranties/products/new")}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
         >
           <Plus className="size-4" />
@@ -150,7 +117,9 @@ export default function WarrantyProductsPage() {
                 {products.map((product) => (
                   <tr
                     key={product.id}
-                    onClick={() => openEditModal(product)}
+                    onClick={() =>
+                      router.push(`/dashboard/warranties/products/${product.id}`)
+                    }
                     className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-3 py-2">
@@ -176,15 +145,6 @@ export default function WarrantyProductsPage() {
           </div>
         )}
       </div>
-
-      {isModalOpen ? (
-        <WarrantyProductModal
-          product={editingProduct}
-          isSubmitting={isSubmitting}
-          onClose={closeModal}
-          onSubmit={handleSubmit}
-        />
-      ) : null}
     </div>
   );
 }

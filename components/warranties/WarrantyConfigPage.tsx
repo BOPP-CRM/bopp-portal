@@ -5,37 +5,26 @@ import ActionMenu from "@/components/util/ActionMenu";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
-  createWarrantyContributor,
-  createWarrantyStatus,
   deleteWarrantyContributor,
   deleteWarrantyStatus,
   getWarrantyConfig,
-  updateWarrantyContributor,
-  updateWarrantyStatusConfig,
   type WarrantyContributor,
   type WarrantyStatus,
 } from "@/services/warranties/warranties";
 import { handleError } from "@/utils/errors";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-const inputClassName =
-  "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
-
-type EditTarget =
-  | { type: "contributor"; item: WarrantyContributor | null }
-  | { type: "status"; item: WarrantyStatus | null }
-  | null;
-
 export default function WarrantyConfigPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [contributors, setContributors] = useState<WarrantyContributor[]>([]);
   const [statuses, setStatuses] = useState<WarrantyStatus[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [editTarget, setEditTarget] = useState<EditTarget>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const loadConfig = useCallback(async () => {
     setError(null);
@@ -51,13 +40,21 @@ export default function WarrantyConfigPage() {
     }
   }, []);
 
-  const closeEditModal = () => {
-    setEditTarget(null);
-  };
-
   useEffect(() => {
     void loadConfig();
   }, [loadConfig]);
+
+  useEffect(() => {
+    if (searchParams.get("saved") !== "1") return;
+    setSuccessMessage("บันทึกข้อมูลสำเร็จ");
+    router.replace("/dashboard/warranties/config");
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   const showSuccess = (message: string) => {
     setSuccessMessage(message);
@@ -73,54 +70,6 @@ export default function WarrantyConfigPage() {
       showSuccess("ลบรายการสำเร็จ");
     } catch (deleteError) {
       setError(handleError(deleteError).message);
-    }
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!editTarget) return;
-
-    const formData = new FormData(event.currentTarget);
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      if (editTarget.type === "contributor") {
-        const payload = {
-          name: String(formData.get("name") || "").trim(),
-          sequence: Number(formData.get("sequence") || 10),
-          active: formData.get("active") === "on",
-        };
-        if (editTarget.item) {
-          await updateWarrantyContributor(editTarget.item.id, payload);
-        } else {
-          await createWarrantyContributor(payload);
-        }
-      }
-
-      if (editTarget.type === "status") {
-        const payload = {
-          code: String(formData.get("code") || "").trim(),
-          label: String(formData.get("label") || "").trim(),
-          sequence: Number(formData.get("sequence") || 10),
-          color: String(formData.get("color") || "").trim() || undefined,
-          is_default: formData.get("is_default") === "on",
-          active: formData.get("active") === "on",
-        };
-        if (editTarget.item) {
-          await updateWarrantyStatusConfig(editTarget.item.id, payload);
-        } else {
-          await createWarrantyStatus(payload);
-        }
-      }
-
-      closeEditModal();
-      await loadConfig();
-      showSuccess("บันทึกข้อมูลสำเร็จ");
-    } catch (submitError) {
-      setError(handleError(submitError).message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -164,7 +113,9 @@ export default function WarrantyConfigPage() {
             title="ช่องทางการซื้อ"
             description="ช่องทางที่ member เลือกได้ เช่น ออนไลน์ ร้านค้า ตัวแทนจำหน่าย"
             actionLabel="เพิ่มช่องทาง"
-            onAction={() => setEditTarget({ type: "contributor", item: null })}
+            onAction={() =>
+              router.push("/dashboard/warranties/config/contributor/new")
+            }
           >
             {contributors.length === 0 ? (
               <EmptyState text="ยังไม่มีช่องทางการซื้อ" />
@@ -172,10 +123,9 @@ export default function WarrantyConfigPage() {
               <ConfigTable
                 headers={["ชื่อ", "ลำดับ", ""]}
                 onRowClick={(index) =>
-                  setEditTarget({
-                    type: "contributor",
-                    item: contributors[index],
-                  })
+                  router.push(
+                    `/dashboard/warranties/config/contributor/${contributors[index].id}`,
+                  )
                 }
                 rows={contributors.map((contributor) => [
                   contributor.name,
@@ -183,7 +133,9 @@ export default function WarrantyConfigPage() {
                   <RowActions
                     key={`contributor-${contributor.id}`}
                     onEdit={() =>
-                      setEditTarget({ type: "contributor", item: contributor })
+                      router.push(
+                        `/dashboard/warranties/config/contributor/${contributor.id}`,
+                      )
                     }
                     onDelete={() =>
                       void handleDelete("contributor", contributor.id)
@@ -198,7 +150,9 @@ export default function WarrantyConfigPage() {
             title="สถานะ"
             description="กำหนด label สถานะที่แสดงใน portal และแอปสมาชิก"
             actionLabel="เพิ่มสถานะ"
-            onAction={() => setEditTarget({ type: "status", item: null })}
+            onAction={() =>
+              router.push("/dashboard/warranties/config/status/new")
+            }
           >
             {statuses.length === 0 ? (
               <EmptyState text="ยังไม่มีสถานะ" />
@@ -206,7 +160,9 @@ export default function WarrantyConfigPage() {
               <ConfigTable
                 headers={["Code", "Label", "สถานะ", "Default", ""]}
                 onRowClick={(index) =>
-                  setEditTarget({ type: "status", item: statuses[index] })
+                  router.push(
+                    `/dashboard/warranties/config/status/${statuses[index].id}`,
+                  )
                 }
                 rows={statuses.map((status) => [
                   status.code,
@@ -216,7 +172,9 @@ export default function WarrantyConfigPage() {
                   <RowActions
                     key={`status-action-${status.id}`}
                     onEdit={() =>
-                      setEditTarget({ type: "status", item: status })
+                      router.push(
+                        `/dashboard/warranties/config/status/${status.id}`,
+                      )
                     }
                     onDelete={() => void handleDelete("status", status.id)}
                   />,
@@ -226,15 +184,6 @@ export default function WarrantyConfigPage() {
           </ConfigSection>
         </div>
       )}
-
-      {editTarget ? (
-        <EditModal
-          target={editTarget}
-          isSubmitting={isSubmitting}
-          onClose={closeEditModal}
-          onSubmit={handleSubmit}
-        />
-      ) : null}
     </div>
   );
 }
@@ -341,164 +290,4 @@ function RowActions({
 
 function EmptyState({ text }: { text: string }) {
   return <p className="text-sm text-gray-100">{text}</p>;
-}
-
-function EditModal({
-  target,
-  isSubmitting,
-  onClose,
-  onSubmit,
-}: {
-  target: Exclude<EditTarget, null>;
-  isSubmitting: boolean;
-  onClose: () => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-}) {
-  const titles = {
-    contributor: target.item ? "แก้ไขช่องทาง" : "เพิ่มช่องทาง",
-    status: target.item ? "แก้ไขสถานะ" : "เพิ่มสถานะ",
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4"
-      onClick={onClose}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="w-full max-w-lg rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)]"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <h2 className="text-xl font-bold text-defualt-text">
-          {titles[target.type]}
-        </h2>
-
-        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-          {target.type === "contributor" ? (
-            <>
-              <FormField label="ชื่อช่องทาง *">
-                <input
-                  name="name"
-                  required
-                  defaultValue={target.item?.name ?? ""}
-                  className={inputClassName}
-                />
-              </FormField>
-              <FormField label="ลำดับ">
-                <input
-                  name="sequence"
-                  type="number"
-                  defaultValue={target.item?.sequence ?? 10}
-                  className={inputClassName}
-                />
-              </FormField>
-              <label className="flex items-center gap-2 text-sm text-defualt-text">
-                <input
-                  type="checkbox"
-                  name="active"
-                  defaultChecked={target.item?.active ?? true}
-                />
-                เปิดใช้งาน
-              </label>
-            </>
-          ) : null}
-
-          {target.type === "status" ? (
-            <>
-              <FormField label="Code *">
-                <input
-                  name="code"
-                  required
-                  defaultValue={target.item?.code ?? ""}
-                  className={inputClassName}
-                  placeholder="pending"
-                />
-              </FormField>
-              <FormField label="Label *">
-                <input
-                  name="label"
-                  required
-                  defaultValue={target.item?.label ?? ""}
-                  className={inputClassName}
-                  placeholder="รอตรวจสอบ"
-                />
-              </FormField>
-              <div className="grid gap-4 md:grid-cols-2">
-                <FormField label="ลำดับ">
-                  <input
-                    name="sequence"
-                    type="number"
-                    defaultValue={target.item?.sequence ?? 10}
-                    className={inputClassName}
-                  />
-                </FormField>
-                <FormField label="สี (Hex)">
-                  <input
-                    name="color"
-                    defaultValue={
-                      target.item?.color ? String(target.item.color) : ""
-                    }
-                    className={inputClassName}
-                    placeholder="#FFC107"
-                  />
-                </FormField>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-defualt-text">
-                <input
-                  type="checkbox"
-                  name="is_default"
-                  defaultChecked={target.item?.is_default ?? false}
-                />
-                สถานะเริ่มต้นเมื่อ member ส่งฟอร์ม
-              </label>
-              <label className="flex items-center gap-2 text-sm text-defualt-text">
-                <input
-                  type="checkbox"
-                  name="active"
-                  defaultChecked={target.item?.active ?? true}
-                />
-                เปิดใช้งาน
-              </label>
-            </>
-          ) : null}
-
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100"
-            >
-              ยกเลิก
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white disabled:opacity-60"
-            >
-              {isSubmitting ? "กำลังบันทึก..." : "บันทึก"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-function FormField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label className="mb-2 block text-sm font-medium text-defualt-text">
-        {label}
-      </label>
-      {children}
-    </div>
-  );
 }

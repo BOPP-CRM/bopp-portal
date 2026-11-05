@@ -1,14 +1,10 @@
 "use client";
 
-import CouponAddCodesModal from "@/components/coupons/CouponAddCodesModal";
-import CouponFormModal from "@/components/coupons/CouponFormModal";
-import CouponRedemptionsModal from "@/components/coupons/CouponRedemptionsModal";
 import ActionMenu from "@/components/util/ActionMenu";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   exportCouponCodes,
-  getCoupon,
   getCoupons,
 } from "@/services/coupons/coupons";
 import type { PortalCoupon } from "@/services/coupons/types";
@@ -16,23 +12,16 @@ import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
 import { Download, History, Pencil, Plus, TicketPlus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function CouponsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [coupons, setCoupons] = useState<PortalCoupon[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [modalCoupon, setModalCoupon] = useState<PortalCoupon | null | undefined>(
-    undefined,
-  );
-  const [editingCouponId, setEditingCouponId] = useState<number | null>(null);
-  const [redemptionsCoupon, setRedemptionsCoupon] = useState<PortalCoupon | null>(
-    null,
-  );
-  const [addCodesCoupon, setAddCodesCoupon] = useState<PortalCoupon | null>(
-    null,
-  );
   const [exportingCouponId, setExportingCouponId] = useState<number | null>(
     null,
   );
@@ -56,37 +45,22 @@ export default function CouponsPage() {
     void loadCoupons();
   }, [loadCoupons]);
 
-  const openCreateModal = () => {
-    setModalCoupon(null);
-  };
+  useEffect(() => {
+    const added = searchParams.get("added");
+    if (searchParams.get("saved") !== "1" && !added) return;
+    setSuccessMessage(
+      added
+        ? `เพิ่มโค้ดสำเร็จ ${formatNumber(Number(added))} รายการ`
+        : "บันทึกคูปองสำเร็จ",
+    );
+    router.replace("/dashboard/coupons");
+  }, [router, searchParams]);
 
-  const openEditModal = async (couponId: number) => {
-    setEditingCouponId(couponId);
-    try {
-      const coupon = await getCoupon(couponId);
-      setModalCoupon(coupon);
-    } catch (loadError) {
-      setError(handleError(loadError).message);
-    } finally {
-      setEditingCouponId(null);
-    }
-  };
-
-  const closeModal = () => {
-    setModalCoupon(undefined);
-  };
-
-  const handleSuccess = async () => {
-    setSuccessMessage("บันทึกคูปองสำเร็จ");
-    await loadCoupons();
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
-
-  const handleAddCodesSuccess = async (addedCount: number) => {
-    setSuccessMessage(`เพิ่มโค้ดสำเร็จ ${formatNumber(addedCount)} รายการ`);
-    await loadCoupons();
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   const handleExportCodes = async (coupon: PortalCoupon) => {
     setExportingCouponId(coupon.id);
@@ -114,7 +88,7 @@ export default function CouponsPage() {
 
         <button
           type="button"
-          onClick={openCreateModal}
+          onClick={() => router.push("/dashboard/coupons/new")}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
         >
           <Plus className="size-4" />
@@ -153,7 +127,7 @@ export default function CouponsPage() {
                 {coupons.map((coupon) => (
                   <tr
                     key={coupon.id}
-                    onClick={() => void openEditModal(coupon.id)}
+                    onClick={() => router.push(`/dashboard/coupons/${coupon.id}`)}
                     className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
@@ -219,7 +193,8 @@ export default function CouponsPage() {
                           {
                             label: "เพิ่มโค้ด",
                             icon: <TicketPlus className="size-4" />,
-                            onClick: () => setAddCodesCoupon(coupon),
+                            onClick: () =>
+                              router.push(`/dashboard/coupons/${coupon.id}/codes`),
                           },
                           {
                             label:
@@ -233,16 +208,16 @@ export default function CouponsPage() {
                           {
                             label: "ประวัติ",
                             icon: <History className="size-4" />,
-                            onClick: () => setRedemptionsCoupon(coupon),
+                            onClick: () =>
+                              router.push(
+                                `/dashboard/coupons/${coupon.id}/redemptions`,
+                              ),
                           },
                           {
-                            label:
-                              editingCouponId === coupon.id
-                                ? "กำลังโหลด..."
-                                : "แก้ไข",
+                            label: "แก้ไข",
                             icon: <Pencil className="size-4" />,
-                            disabled: editingCouponId === coupon.id,
-                            onClick: () => void openEditModal(coupon.id),
+                            onClick: () =>
+                              router.push(`/dashboard/coupons/${coupon.id}`),
                           },
                         ]}
                       />
@@ -254,30 +229,6 @@ export default function CouponsPage() {
           </div>
         )}
       </div>
-
-      {modalCoupon !== undefined ? (
-        <CouponFormModal
-          coupon={modalCoupon}
-          onClose={closeModal}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
-
-      {redemptionsCoupon ? (
-        <CouponRedemptionsModal
-          couponId={redemptionsCoupon.id}
-          couponName={redemptionsCoupon.name}
-          onClose={() => setRedemptionsCoupon(null)}
-        />
-      ) : null}
-
-      {addCodesCoupon ? (
-        <CouponAddCodesModal
-          coupon={addCodesCoupon}
-          onClose={() => setAddCodesCoupon(null)}
-          onSuccess={handleAddCodesSuccess}
-        />
-      ) : null}
     </div>
   );
 }

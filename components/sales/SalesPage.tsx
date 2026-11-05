@@ -335,14 +335,14 @@ export default function SalesPage() {
             </button>
           ) : null}
 
-          <form onSubmit={handleSearch} className="relative w-full min-w-56 sm:max-w-sm">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
+          <form onSubmit={handleSearch} className="relative w-full min-w-56 sm:w-96">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-100" />
             <input
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาเลขออเดอร์, ชื่อลูกค้า..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
+              className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-4 pl-10 text-base outline-none focus:border-brown-100"
             />
           </form>
         </div>

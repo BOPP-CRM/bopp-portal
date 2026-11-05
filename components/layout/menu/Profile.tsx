@@ -20,7 +20,15 @@ function getInitials(fullName?: string): string {
   return parts[0][0]?.toUpperCase() ?? "";
 }
 
-export default function Profile() {
+type ProfileProps = {
+  variant?: "header" | "sidebar";
+  collapsed?: boolean;
+};
+
+export default function Profile({
+  variant = "header",
+  collapsed = false,
+}: ProfileProps) {
   const { me, fetchMe } = useApp();
   const [isOpen, setIsOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -71,16 +79,20 @@ export default function Profile() {
   return (
     <div
       ref={containerRef}
-      className="relative flex items-center gap-4 font-medium cursor-pointer"
+      className={`relative flex cursor-pointer items-center font-medium ${
+        variant === "sidebar"
+          ? `w-full gap-2.5 rounded-xl px-2 py-1.5 hover:bg-gray-10${collapsed ? " md:justify-center md:px-0" : ""}`
+          : "gap-3"
+      }`}
       onClick={() => setIsOpen((prev) => !prev)}
     >
       <div
-        className="size-8 shrink-0 rounded-full bg-brown-100 flex items-center justify-center text-white text-xs font-medium"
+        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-brown-100 text-xs font-medium text-white"
         aria-hidden
       >
         {getInitials(me?.user.name)}
       </div>
-      <div className="min-w-0 text-sm">
+      <div className={`min-w-0 flex-1 text-sm${collapsed ? " md:hidden" : ""}`}>
         <div className="truncate font-medium text-gray-100">
           {me?.user.name}
         </div>
@@ -92,7 +104,7 @@ export default function Profile() {
       </div>
       <button
         type="button"
-        className="size-6 shrink-0 flex items-center justify-center text-brown-100 cursor-pointer [&_svg]:shrink-0"
+        className={`flex size-6 shrink-0 cursor-pointer items-center justify-center text-brown-100 [&_svg]:shrink-0${collapsed ? " md:hidden" : ""}`}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-label="เมนูโปรไฟล์"
@@ -105,7 +117,12 @@ export default function Profile() {
       {isOpen && (
         <div
           role="menu"
-          className="absolute top-full right-0 mt-2 min-w-44 bg-white rounded-2xl border border-gray-200 py-2 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] z-50"
+          onClick={(event) => event.stopPropagation()}
+          className={`absolute z-50 min-w-44 rounded-2xl border border-gray-200 bg-white py-2 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
+            variant === "sidebar"
+              ? "bottom-full left-0 mb-2"
+              : "top-full right-0 mt-2"
+          }`}
         >
           <button
             type="button"

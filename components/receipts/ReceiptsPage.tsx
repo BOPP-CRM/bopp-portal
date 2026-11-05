@@ -179,14 +179,14 @@ export default function ReceiptsPage() {
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-3 md:max-w-3xl md:justify-end">
-          <form onSubmit={handleSearch} className="relative min-w-56 flex-1">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
+          <form onSubmit={handleSearch} className="relative min-w-72 flex-1 md:min-w-96">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-100" />
             <input
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาเลขใบเสร็จ, ชื่อ, LINE ID..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
+              className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-4 pl-10 text-base outline-none focus:border-brown-100"
             />
           </form>
 
@@ -257,7 +257,7 @@ export default function ReceiptsPage() {
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <TableSkeleton rows={6} columns={7} avatarColumn />
+          <TableSkeleton rows={6} columns={6} avatarColumn />
         ) : error ? (
           <div className="p-6 text-sm text-red-100">{error}</div>
         ) : receipts.length === 0 ? (
@@ -288,7 +288,6 @@ export default function ReceiptsPage() {
                     <th className="px-4 py-4 font-medium whitespace-nowrap">
                       Reward Point
                     </th>
-                    <th className="px-4 py-4 font-medium">ระดับ</th>
                     <th className="px-4 py-4 font-medium">สถานะ</th>
                     <th className="px-4 py-4 font-medium whitespace-nowrap">
                       วันที่ส่ง
@@ -313,11 +312,6 @@ export default function ReceiptsPage() {
                       </td>
                       <td className="px-4 py-4 font-medium whitespace-nowrap text-brown-100">
                         {formatNumber(receipt.reward_points)}
-                      </td>
-                      <td className="px-4 py-4">
-                        <span className="inline-block max-w-[140px] truncate rounded-full bg-brown-yellow-5 px-2 py-0.5 text-[11px] font-medium text-brown-100">
-                          {receipt.tier.name}
-                        </span>
                       </td>
                       <td className="px-4 py-4">
                         <StateBadge state={receipt.state} />
@@ -446,14 +440,6 @@ function ReceiptCard({
           <dt className="text-xs text-gray-100">Reward Point</dt>
           <dd className="font-medium text-brown-100">
             {formatNumber(receipt.reward_points)}
-          </dd>
-        </div>
-        <div className="col-span-2">
-          <dt className="text-xs text-gray-100">ระดับ</dt>
-          <dd className="mt-1">
-            <span className="inline-block rounded-full bg-brown-yellow-5 px-2 py-0.5 text-[11px] font-medium text-brown-100">
-              {receipt.tier.name}
-            </span>
           </dd>
         </div>
       </dl>

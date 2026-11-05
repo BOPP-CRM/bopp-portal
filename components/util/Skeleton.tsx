@@ -24,11 +24,11 @@ export function TableSkeleton({
   columns,
   showHeader = true,
   avatarColumn = false,
-  cellClassName = "px-3 py-1.5",
+  cellClassName = "px-3 py-2.5",
 }: TableSkeletonProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-xs">
+      <table className="min-w-full text-left text-base">
         {showHeader ? (
           <thead className="border-b border-gray-200 bg-gray-10">
             <tr>
@@ -50,7 +50,7 @@ export function TableSkeleton({
                 <td key={colIndex} className={cellClassName}>
                   {avatarColumn && colIndex === 0 ? (
                     <div className="flex items-center gap-2">
-                      <Skeleton className="size-7 shrink-0 rounded-full" />
+                      <Skeleton className="size-8 shrink-0 rounded-full" />
                       <Skeleton className="h-3 w-24" />
                     </div>
                   ) : (

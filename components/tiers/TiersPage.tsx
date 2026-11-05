@@ -1,25 +1,22 @@
 "use client";
 
-import TierFormModal from "@/components/tiers/TierFormModal";
-import JoinRewardsModal from "@/components/tiers/JoinRewardsModal";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
-import { getTier, getTiers } from "@/services/tiers/tiers";
+import { getTiers } from "@/services/tiers/tiers";
 import type { PortalTier } from "@/services/tiers/types";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
 import { Gift, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 export default function TiersPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tiers, setTiers] = useState<PortalTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [modalTier, setModalTier] = useState<PortalTier | null | undefined>(
-    undefined,
-  );
-  const [showJoinRewards, setShowJoinRewards] = useState(false);
 
   const loadTiers = useCallback(async () => {
     setError(null);
@@ -40,28 +37,17 @@ export default function TiersPage() {
     void loadTiers();
   }, [loadTiers]);
 
-  const openCreateModal = () => {
-    setModalTier(null);
-  };
-
-  const openEditModal = async (tierId: number) => {
-    try {
-      const tier = await getTier(tierId);
-      setModalTier(tier);
-    } catch (loadError) {
-      setError(handleError(loadError).message);
-    }
-  };
-
-  const closeModal = () => {
-    setModalTier(undefined);
-  };
-
-  const handleSuccess = async () => {
+  useEffect(() => {
+    if (searchParams.get("saved") !== "1") return;
     setSuccessMessage("บันทึกระดับสมาชิกสำเร็จ");
-    await loadTiers();
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
+    router.replace("/dashboard/tier");
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   return (
     <div className="p-3 md:p-5">
@@ -78,7 +64,7 @@ export default function TiersPage() {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => setShowJoinRewards(true)}
+            onClick={() => router.push("/dashboard/tier/join-rewards")}
             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl border border-brown-100 px-3.5 py-1.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5"
           >
             <Gift className="size-4" />
@@ -86,7 +72,7 @@ export default function TiersPage() {
           </button>
           <button
             type="button"
-            onClick={openCreateModal}
+            onClick={() => router.push("/dashboard/tier/new")}
             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
           >
             <Plus className="size-4" />
@@ -125,7 +111,7 @@ export default function TiersPage() {
                 {tiers.map((tier) => (
                   <tr
                     key={tier.id}
-                    onClick={() => void openEditModal(tier.id)}
+                    onClick={() => router.push(`/dashboard/tier/${tier.id}`)}
                     className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
@@ -168,24 +154,6 @@ export default function TiersPage() {
           </div>
         )}
       </div>
-
-      {modalTier !== undefined ? (
-        <TierFormModal
-          tier={modalTier}
-          onClose={closeModal}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
-
-      {showJoinRewards ? (
-        <JoinRewardsModal
-          onClose={() => setShowJoinRewards(false)}
-          onSuccess={() => {
-            setSuccessMessage("บันทึกรางวัลสมาชิกใหม่สำเร็จ");
-            setTimeout(() => setSuccessMessage(null), 3000);
-          }}
-        />
-      ) : null}
     </div>
   );
 }

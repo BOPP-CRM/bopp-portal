@@ -1,11 +1,9 @@
 "use client";
 
-import RedeemQrcodeFormModal from "@/components/redeem-qrcodes/RedeemQrcodeFormModal";
 import FilterGroup from "@/components/util/FilterGroup";
 import { compactTableClassName } from "@/components/util/data-table";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
-  getRedeemQrcode,
   getRedeemQrcodes,
 } from "@/services/redeem-qrcodes/redeem-qrcodes";
 import type { PortalRedeemQrcode } from "@/services/redeem-qrcodes/types";
@@ -13,6 +11,7 @@ import { formatDateTime, isApiDateAfterNow } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
@@ -20,6 +19,8 @@ const PAGE_SIZE = 20;
 type ActiveFilter = "all" | "active" | "inactive";
 
 export default function RedeemQrcodesPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [qrcodes, setQrcodes] = useState<PortalRedeemQrcode[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
@@ -27,9 +28,6 @@ export default function RedeemQrcodesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [modalQrcode, setModalQrcode] = useState<
-    PortalRedeemQrcode | null | undefined
-  >(undefined);
 
   const activeParam = useMemo(() => {
     if (activeFilter === "active") return true;
@@ -85,28 +83,17 @@ export default function RedeemQrcodesPage() {
     [],
   );
 
-  const openCreateModal = () => {
-    setModalQrcode(null);
-  };
-
-  const openEditModal = async (qrcodeId: number) => {
-    try {
-      const qrcode = await getRedeemQrcode(qrcodeId);
-      setModalQrcode(qrcode);
-    } catch (loadError) {
-      setError(handleError(loadError).message);
-    }
-  };
-
-  const closeModal = () => {
-    setModalQrcode(undefined);
-  };
-
-  const handleSuccess = async () => {
+  useEffect(() => {
+    if (searchParams.get("saved") !== "1") return;
     setSuccessMessage("บันทึก Redeem QR สำเร็จ");
-    await loadQrcodes();
-    setTimeout(() => setSuccessMessage(null), 3000);
-  };
+    router.replace("/dashboard/redeem-qrcodes");
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   const formatReward = (qrcode: PortalRedeemQrcode) => {
     const parts: string[] = [];
@@ -144,7 +131,7 @@ export default function RedeemQrcodesPage() {
 
         <button
           type="button"
-          onClick={openCreateModal}
+          onClick={() => router.push("/dashboard/redeem-qrcodes/new")}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
         >
           <Plus className="size-4" />
@@ -192,7 +179,7 @@ export default function RedeemQrcodesPage() {
                 {qrcodes.map((qrcode) => (
                   <tr
                     key={qrcode.id}
-                    onClick={() => void openEditModal(qrcode.id)}
+                    onClick={() => router.push(`/dashboard/redeem-qrcodes/${qrcode.id}`)}
                     className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
@@ -261,14 +248,6 @@ export default function RedeemQrcodesPage() {
           </div>
         ) : null}
       </div>
-
-      {modalQrcode !== undefined ? (
-        <RedeemQrcodeFormModal
-          qrcode={modalQrcode}
-          onClose={closeModal}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
     </div>
   );
 }

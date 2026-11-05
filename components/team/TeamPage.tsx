@@ -1,8 +1,5 @@
 "use client";
 
-import CreateInviteModal from "@/components/team/CreateInviteModal";
-import CreateTeamUserModal from "@/components/team/CreateTeamUserModal";
-import EditTeamUserModal from "@/components/team/EditTeamUserModal";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import ActionMenu from "@/components/util/ActionMenu";
 import { compactTableClassName } from "@/components/util/data-table";
@@ -22,10 +19,11 @@ import {
   ChevronRight,
   Copy,
   Link2,
+  Plus,
   Search,
-  UserPlus,
   X,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const PAGE_SIZE = 20;
@@ -35,6 +33,8 @@ type Tab = "users" | "invites";
 type ActiveFilter = "all" | "active" | "inactive";
 
 export default function TeamPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("users");
   const [teamUsers, setTeamUsers] = useState<
     Awaited<ReturnType<typeof getTeamUsers>>["teamUsers"]
@@ -51,9 +51,6 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [showCreateUser, setShowCreateUser] = useState(false);
-  const [showCreateInvite, setShowCreateInvite] = useState(false);
-  const [editingUser, setEditingUser] = useState<PortalTeamUser | null>(null);
   const [cancellingInviteId, setCancellingInviteId] = useState<number | null>(
     null,
   );
@@ -111,6 +108,19 @@ export default function TeamPage() {
   useEffect(() => {
     setOffset(0);
   }, [tab, search, activeFilter, inviteStateFilter]);
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "invites") setTab("invites");
+    if (searchParams.get("saved") !== "1") return;
+    setSuccessMessage("บันทึกข้อมูลทีมสำเร็จ");
+    router.replace("/dashboard/team");
+  }, [router, searchParams]);
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = window.setTimeout(() => setSuccessMessage(null), 3000);
+    return () => window.clearTimeout(timer);
+  }, [successMessage]);
 
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -194,11 +204,19 @@ export default function TeamPage() {
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => setShowCreateInvite(true)}
+            onClick={() => router.push("/dashboard/team/invite")}
             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl border border-brown-100 px-3.5 py-1.5 text-sm font-medium text-brown-100 transition hover:bg-brown-yellow-5"
           >
             <Link2 className="size-4" />
             เชิญด้วยลิงก์
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/team/new")}
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl bg-brown-100 px-3.5 py-1.5 text-sm font-medium text-white transition hover:bg-brown-100/80"
+          >
+            <Plus className="size-4" />
+            เพิ่มสมาชิก
           </button>
         </div>
       </div>
@@ -247,14 +265,14 @@ export default function TeamPage() {
           ทั้งหมด {formatNumber(total)} รายการ
         </p>
         {tab === "users" ? (
-          <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
+          <form onSubmit={handleSearch} className="relative w-full sm:w-96">
+            <Search className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-gray-100" />
             <input
               type="search"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
               placeholder="ค้นหาชื่อ, อีเมล..."
-              className="w-full rounded-xl border border-gray-200 bg-white py-2 pr-3 pl-9 text-sm outline-none focus:border-brown-100"
+              className="h-11 w-full rounded-xl border border-gray-200 bg-white pr-4 pl-10 text-base outline-none focus:border-brown-100"
             />
           </form>
         ) : null}
@@ -269,7 +287,10 @@ export default function TeamPage() {
           teamUsers.length === 0 ? (
             <div className="p-6 text-sm text-gray-100">ไม่พบสมาชิกทีม</div>
           ) : (
-            <UsersTable users={teamUsers} onEdit={setEditingUser} />
+            <UsersTable
+              users={teamUsers}
+              onEdit={(user) => router.push(`/dashboard/team/${user.id}`)}
+            />
           )
         ) : invites.length === 0 ? (
           <div className="p-6 text-sm text-gray-100">ไม่พบคำเชิญ</div>
@@ -294,28 +315,6 @@ export default function TeamPage() {
           />
         ) : null}
       </div>
-
-      {showCreateUser ? (
-        <CreateTeamUserModal
-          onClose={() => setShowCreateUser(false)}
-          onSuccess={() => void handleSuccess("เพิ่มสมาชิกทีมสำเร็จ")}
-        />
-      ) : null}
-
-      {showCreateInvite ? (
-        <CreateInviteModal
-          onClose={() => setShowCreateInvite(false)}
-          onSuccess={() => void handleSuccess("สร้างคำเชิญสำเร็จ")}
-        />
-      ) : null}
-
-      {editingUser ? (
-        <EditTeamUserModal
-          user={editingUser}
-          onClose={() => setEditingUser(null)}
-          onSuccess={() => void handleSuccess("บันทึกสมาชิกทีมสำเร็จ")}
-        />
-      ) : null}
     </div>
   );
 }

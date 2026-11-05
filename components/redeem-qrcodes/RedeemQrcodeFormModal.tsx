@@ -3,6 +3,7 @@
 import {
   buildRedeemQrcodeUpdatePayload,
   createRedeemQrcode,
+  getRedeemQrcode,
   getRewardCouponId,
   updateRedeemQrcode,
   type CreateRedeemQrcodeRequest,
@@ -12,6 +13,7 @@ import { getCoupons } from "@/services/coupons/coupons";
 import type { PortalCoupon } from "@/services/coupons/types";
 import { getCurrencies } from "@/services/currencies/currencies";
 import type { PortalCurrency } from "@/services/currencies/types";
+import { FormFieldsSkeleton } from "@/components/util/Skeleton";
 import Select from "@/components/util/Select";
 import {
   formatDateTime,
@@ -20,15 +22,13 @@ import {
 } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
-import { Copy } from "lucide-react";
+import { Copy, ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-const MODAL_EXIT_MS = 250;
-
-type RedeemQrcodeFormModalProps = {
-  qrcode?: PortalRedeemQrcode | null;
-  onClose: () => void;
-  onSuccess: () => void;
+type RedeemQrcodeFormPageProps = {
+  qrcodeId: number | null;
 };
 
 type RedeemQrcodeFormState = {
@@ -83,19 +83,17 @@ function formatRewardSummary(qrcode: PortalRedeemQrcode) {
 }
 
 export default function RedeemQrcodeFormModal({
-  qrcode,
-  onClose,
-  onSuccess,
-}: RedeemQrcodeFormModalProps) {
-  const isEdit = Boolean(qrcode);
-  const [isClosing, setIsClosing] = useState(false);
+  qrcodeId,
+}: RedeemQrcodeFormPageProps) {
+  const router = useRouter();
+  const isEdit = qrcodeId !== null;
+  const [qrcode, setQrcode] = useState<PortalRedeemQrcode | null>(null);
+  const [loading, setLoading] = useState(isEdit);
   const [currencies, setCurrencies] = useState<PortalCurrency[]>([]);
   const [coupons, setCoupons] = useState<PortalCoupon[]>([]);
-  const [form, setForm] = useState<RedeemQrcodeFormState>(
-    qrcode ? toFormState(qrcode) : emptyForm(),
-  );
+  const [form, setForm] = useState<RedeemQrcodeFormState>(emptyForm());
   const [displayQrcode, setDisplayQrcode] = useState<PortalRedeemQrcode | null>(
-    qrcode ?? null,
+    null,
   );
   const [showCreateResult, setShowCreateResult] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,11 +101,27 @@ export default function RedeemQrcodeFormModal({
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (qrcode) {
-      setForm(toFormState(qrcode));
-      setDisplayQrcode(qrcode);
-    }
-  }, [qrcode]);
+    if (qrcodeId === null) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void getRedeemQrcode(qrcodeId)
+      .then((data) => {
+        if (cancelled) return;
+        setQrcode(data);
+        setForm(toFormState(data));
+        setDisplayQrcode(data);
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(handleError(loadError).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [qrcodeId]);
 
   useEffect(() => {
     void Promise.all([getCurrencies(), getCoupons()])
@@ -149,23 +163,11 @@ export default function RedeemQrcodeFormModal({
     [coupons],
   );
 
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
+  const goBack = (saved = false) => {
+    router.push(
+      saved ? "/dashboard/redeem-qrcodes?saved=1" : "/dashboard/redeem-qrcodes",
+    );
   };
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isSubmitting]);
 
   const buildPayload = (): CreateRedeemQrcodeRequest | null => {
     if (!form.name.trim()) {
@@ -227,18 +229,15 @@ export default function RedeemQrcodeFormModal({
       if (isEdit && qrcode) {
         const updatePayload = buildRedeemQrcodeUpdatePayload(qrcode, payload);
         if (Object.keys(updatePayload).length === 0) {
-          closeModal();
+          goBack();
           return;
         }
-        const updated = await updateRedeemQrcode(qrcode.id, updatePayload);
-        setDisplayQrcode(updated);
-        onSuccess();
-        closeModal();
+        await updateRedeemQrcode(qrcode.id, updatePayload);
+        goBack(true);
       } else {
         const created = await createRedeemQrcode(payload);
         setDisplayQrcode(created);
         setShowCreateResult(true);
-        onSuccess();
       }
     } catch (submitError) {
       setError(handleError(submitError).message);
@@ -258,28 +257,34 @@ export default function RedeemQrcodeFormModal({
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-3 md:p-5">
+        <Link
+          href="/dashboard/redeem-qrcodes"
+          className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
+        >
+          <ArrowLeft className="size-4" />
+          กลับไปรางวัล QR Code
+        </Link>
+        <div className="rounded-md border border-gray-200 bg-white p-4 shadow-sm md:p-5">
+          <FormFieldsSkeleton fields={6} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={isSubmitting ? undefined : closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="redeem-qrcode-form-title"
-        className={`max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/redeem-qrcodes"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
-        <h2
+        <ArrowLeft className="size-4" />
+        กลับไปรางวัล QR Code
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 shadow-sm md:p-5">
+        <h1
           id="redeem-qrcode-form-title"
           className="text-xl font-bold text-defualt-text"
         >
@@ -288,7 +293,7 @@ export default function RedeemQrcodeFormModal({
             : isEdit
               ? "แก้ไข Redeem QR"
               : "สร้าง Redeem QR"}
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-gray-100">
           {showCreateResult
             ? "QR Code พร้อมใช้งานแล้ว"
@@ -304,7 +309,7 @@ export default function RedeemQrcodeFormModal({
             />
             <button
               type="button"
-              onClick={closeModal}
+              onClick={() => goBack()}
               className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
             >
               ปิด
@@ -435,7 +440,7 @@ export default function RedeemQrcodeFormModal({
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={closeModal}
+                onClick={() => goBack()}
                 className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 ยกเลิก
@@ -526,13 +531,13 @@ function QrCodeSection({
           <div>
             <p className="mb-1 font-medium text-defualt-text">Code</p>
             <div className="flex min-w-0 items-start gap-2">
-              <code className="min-w-0 flex-1 break-all rounded-lg bg-gray-10 px-3 py-2 text-xs">
+              <code className="min-w-0 flex-1 break-all rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs">
                 {qrcode.code}
               </code>
               <button
                 type="button"
                 onClick={() => void onCopy(qrcode.code, " Code ")}
-                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-4xl border border-gray-200 px-3 py-2 text-xs text-defualt-text transition hover:bg-gray-10"
+                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-4xl border border-gray-200 bg-white px-3 py-2 text-xs text-defualt-text transition hover:bg-gray-10"
               >
                 <Copy className="size-3.5" />
                 คัดลอก
@@ -542,13 +547,13 @@ function QrCodeSection({
           <div>
             <p className="mb-1 font-medium text-defualt-text">Redeem URL</p>
             <div className="flex min-w-0 items-start gap-2">
-              <code className="min-w-0 flex-1 break-all rounded-lg bg-gray-10 px-3 py-2 text-xs leading-relaxed">
+              <code className="min-w-0 flex-1 break-all rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs leading-relaxed">
                 {qrcode.redeem_url}
               </code>
               <button
                 type="button"
                 onClick={() => void onCopy(qrcode.redeem_url, " URL ")}
-                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-4xl border border-gray-200 px-3 py-2 text-xs text-defualt-text transition hover:bg-gray-10"
+                className="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-4xl border border-gray-200 bg-white px-3 py-2 text-xs text-defualt-text transition hover:bg-gray-10"
               >
                 <Copy className="size-3.5" />
                 คัดลอก
@@ -572,7 +577,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5">
+    <section className="rounded-2xl border border-gray-200 bg-gray-10 p-4 md:p-5">
       <h3 className="mb-4 text-sm font-semibold text-defualt-text">{title}</h3>
       {children}
     </section>

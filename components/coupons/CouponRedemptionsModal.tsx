@@ -1,6 +1,6 @@
 "use client";
 
-import { getCouponRedemptions } from "@/services/coupons/coupons";
+import { getCoupon, getCouponRedemptions } from "@/services/coupons/coupons";
 import type {
   CouponRedemption,
   CouponRedemptionSummary,
@@ -15,27 +15,22 @@ import {
   formatNumber,
   formatPointSource,
 } from "@/utils/format";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-const MODAL_EXIT_MS = 250;
-const PAGE_SIZE = 20;
-
-type CouponRedemptionsModalProps = {
+type CouponRedemptionsPageProps = {
   couponId: number;
-  couponName: string;
-  onClose: () => void;
 };
 
 type UsedFilter = "all" | "unused" | "used";
 
+const PAGE_SIZE = 20;
+
 export default function CouponRedemptionsModal({
   couponId,
-  couponName,
-  onClose,
-}: CouponRedemptionsModalProps) {
-  const [isClosing, setIsClosing] = useState(false);
+}: CouponRedemptionsPageProps) {
+  const [couponName, setCouponName] = useState("");
   const [summary, setSummary] = useState<CouponRedemptionSummary | null>(null);
   const [redemptions, setRedemptions] = useState<CouponRedemption[]>([]);
   const [total, setTotal] = useState(0);
@@ -81,17 +76,10 @@ export default function CouponRedemptionsModal({
   }, [usedFilter, couponId]);
 
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, []);
+    void getCoupon(couponId)
+      .then((coupon) => setCouponName(coupon.name))
+      .catch(() => setCouponName(""));
+  }, [couponId]);
 
   const usedOptions = useMemo(
     () => [
@@ -107,40 +95,24 @@ export default function CouponRedemptionsModal({
   const canGoPrev = offset > 0;
   const canGoNext = offset + PAGE_SIZE < total;
 
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
-  };
-
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="coupon-redemptions-title"
-        className={`max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/coupons"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
+        <ArrowLeft className="size-4" />
+        กลับไปจัดการคูปอง
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2
+            <h1
               id="coupon-redemptions-title"
               className="text-xl font-bold text-defualt-text"
             >
               ประวัติการแลกคูปอง
-            </h2>
+            </h1>
             <p className="mt-1 text-sm text-gray-100">{couponName}</p>
           </div>
           <div className="w-full md:w-48">
@@ -275,13 +247,12 @@ export default function CouponRedemptionsModal({
         ) : null}
 
         <div className="mt-5">
-          <button
-            type="button"
-            onClick={closeModal}
-            className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80"
+          <Link
+            href="/dashboard/coupons"
+            className="inline-flex w-full items-center justify-center rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80"
           >
-            ปิด
-          </button>
+            กลับ
+          </Link>
         </div>
       </div>
     </div>

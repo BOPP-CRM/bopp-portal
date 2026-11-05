@@ -30,7 +30,7 @@ export default function FilterGroup<T extends string | number>({
       <div
         role="tablist"
         aria-label={ariaLabel ?? label}
-        className="inline-flex max-w-full flex-wrap gap-0.5 rounded-md border border-gray-200 bg-gray-10 p-0.5"
+        className="inline-flex max-w-full flex-wrap gap-0.5 rounded-md border border-gray-200 bg-white p-0.5 shadow-sm"
       >
         {options.map((option) => {
           const selected = option.value === value;
@@ -41,10 +41,10 @@ export default function FilterGroup<T extends string | number>({
               role="tab"
               aria-selected={selected}
               onClick={() => onChange(option.value)}
-              className={`cursor-pointer rounded-sm px-3 py-1 text-xs font-medium whitespace-nowrap transition ${
+              className={`cursor-pointer rounded-sm px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition ${
                 selected
                   ? "bg-brown-100 text-white"
-                  : "text-defualt-text hover:bg-white"
+                  : "bg-white text-defualt-text hover:bg-gray-10"
               }`}
             >
               {option.label}

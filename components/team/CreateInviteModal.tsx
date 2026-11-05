@@ -6,24 +6,16 @@ import Select from "@/components/util/Select";
 import { formatDateTime } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { PORTAL_ROLE_OPTIONS } from "@/utils/roles";
-import { Copy } from "lucide-react";
-import { useEffect, useState } from "react";
-
-const MODAL_EXIT_MS = 250;
-
-type CreateInviteModalProps = {
-  onClose: () => void;
-  onSuccess: () => void;
-};
+import { ArrowLeft, Copy } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 const inputClassName =
   "w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-brown-100";
 
-export default function CreateInviteModal({
-  onClose,
-  onSuccess,
-}: CreateInviteModalProps) {
-  const [isClosing, setIsClosing] = useState(false);
+export default function CreateInviteModal() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<PortalRole>("operation");
@@ -34,23 +26,9 @@ export default function CreateInviteModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
+  const goBack = (saved = false) => {
+    router.push(saved ? "/dashboard/team?saved=1&tab=invites" : "/dashboard/team");
   };
-
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
-    };
-  }, [isSubmitting]);
 
   const copyUrl = async (url: string) => {
     try {
@@ -80,7 +58,6 @@ export default function CreateInviteModal({
         role,
       });
       setCreatedInvite(invite);
-      onSuccess();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -89,28 +66,18 @@ export default function CreateInviteModal({
   };
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={isSubmitting ? undefined : closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        className={`w-full max-w-lg rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/team"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
-        <h2 className="text-xl font-bold text-defualt-text">
+        <ArrowLeft className="size-4" />
+        กลับไปจัดการทีม
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
+        <h1 className="text-xl font-bold text-defualt-text">
           {createdInvite ? "สร้าง Invite สำเร็จ" : "เชิญสมาชิกทีม"}
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-gray-100">
           {createdInvite
             ? "ส่งลิงก์นี้ให้ผู้ใช้เพื่อตั้งรหัสผ่านและเข้าระบบ"
@@ -152,7 +119,7 @@ export default function CreateInviteModal({
             </div>
             <button
               type="button"
-              onClick={closeModal}
+              onClick={() => goBack(Boolean(createdInvite))}
               className="w-full cursor-pointer rounded-4xl bg-brown-100 px-3 py-2 text-sm font-medium text-white transition hover:bg-brown-100/80"
             >
               ปิด
@@ -189,7 +156,7 @@ export default function CreateInviteModal({
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={closeModal}
+                onClick={() => goBack(Boolean(createdInvite))}
                 className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 ยกเลิก

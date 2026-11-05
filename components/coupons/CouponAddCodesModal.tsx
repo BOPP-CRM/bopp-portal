@@ -3,24 +3,26 @@
 import {
   addCouponCodes,
   downloadCouponCodesImportTemplate,
+  getCoupon,
 } from "@/services/coupons/coupons";
 import type { PortalCoupon } from "@/services/coupons/types";
+import { FormFieldsSkeleton } from "@/components/util/Skeleton";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
 import { readFileAsBase64 } from "@/utils/file";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const MODAL_EXIT_MS = 250;
-const DEFAULT_MAX_CODE_BATCH = 2000;
+type CouponAddCodesPageProps = {
+  couponId: number;
+};
 const COUPON_CSV_TEMPLATE_PREVIEW = `code
 example_code_1
 example_code_2`;
 
-type CouponAddCodesModalProps = {
-  coupon: PortalCoupon;
-  onClose: () => void;
-  onSuccess: (addedCount: number) => void;
-};
+const DEFAULT_MAX_CODE_BATCH = 2000;
 
 type AddCodesFormState = {
   codeQuantity: string;
@@ -50,37 +52,43 @@ const inputClassName =
 const fileInputClassName =
   "w-full rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-brown-yellow-5 file:px-3 file:py-1.5 file:text-sm file:text-brown-100";
 
-export default function CouponAddCodesModal({
-  coupon,
-  onClose,
-  onSuccess,
-}: CouponAddCodesModalProps) {
-  const maxCodeBatch = coupon.max_code_batch_size || DEFAULT_MAX_CODE_BATCH;
-  const [isClosing, setIsClosing] = useState(false);
-  const [form, setForm] = useState<AddCodesFormState>(() => toFormState(coupon));
+export default function CouponAddCodesModal({ couponId }: CouponAddCodesPageProps) {
+  const router = useRouter();
+  const [coupon, setCoupon] = useState<PortalCoupon | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<AddCodesFormState>({
+    codeQuantity: "100",
+    randomRange: "6",
+    prefixCode: "",
+    suffixCode: "",
+    importFilename: "",
+  });
   const [importFileBase64, setImportFileBase64] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const lockedCodeSource = coupon.code_source;
-
-  const closeModal = () => {
-    setIsClosing(true);
-    setTimeout(() => onClose(), MODAL_EXIT_MS);
-  };
 
   useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !isSubmitting) closeModal();
-    };
-
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleEscape);
+    let cancelled = false;
+    void getCoupon(couponId)
+      .then((data) => {
+        if (cancelled) return;
+        setCoupon(data);
+        setForm(toFormState(data));
+      })
+      .catch((loadError) => {
+        if (!cancelled) setError(handleError(loadError).message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleEscape);
+      cancelled = true;
     };
-  }, [isSubmitting]);
+  }, [couponId]);
+
+  const maxCodeBatch = coupon?.max_code_batch_size || DEFAULT_MAX_CODE_BATCH;
+  const lockedCodeSource = coupon?.code_source ?? "generate";
 
   const updateField = <K extends keyof AddCodesFormState>(
     key: K,
@@ -126,6 +134,8 @@ export default function CouponAddCodesModal({
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    if (!coupon) return;
+
     setIsSubmitting(true);
 
     try {
@@ -154,7 +164,9 @@ export default function CouponAddCodesModal({
           prefix_code: form.prefixCode.trim() || undefined,
           suffix_code: form.suffixCode.trim() || undefined,
         });
-        onSuccess(result.added_code_count);
+        router.push(
+          `/dashboard/coupons?saved=1&added=${result.added_code_count}`,
+        );
       } else {
         if (!importFileBase64 || !form.importFilename) {
           setError("กรุณาเลือกไฟล์ CSV");
@@ -166,10 +178,10 @@ export default function CouponAddCodesModal({
           import_file: importFileBase64,
           import_filename: form.importFilename,
         });
-        onSuccess(result.added_code_count);
+        router.push(
+          `/dashboard/coupons?saved=1&added=${result.added_code_count}`,
+        );
       }
-
-      closeModal();
     } catch (submitError) {
       setError(handleError(submitError).message);
     } finally {
@@ -177,33 +189,43 @@ export default function CouponAddCodesModal({
     }
   };
 
+  if (loading || !coupon) {
+    return (
+      <div className="p-3 md:p-5">
+        <Link
+          href="/dashboard/coupons"
+          className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
+        >
+          <ArrowLeft className="size-4" />
+          กลับไปจัดการคูปอง
+        </Link>
+        <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
+          {error ? (
+            <p className="text-sm text-red-100">{error}</p>
+          ) : (
+            <FormFieldsSkeleton fields={4} />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
-        isClosing
-          ? "opacity-0 transition-opacity duration-250 ease-in"
-          : "animate-dialog-backdrop-in"
-      }`}
-      onClick={isSubmitting ? undefined : closeModal}
-      role="presentation"
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="coupon-add-codes-title"
-        className={`max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
-          isClosing
-            ? "opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
-            : "animate-dialog-pop-in"
-        }`}
-        onClick={(event) => event.stopPropagation()}
+    <div className="p-3 md:p-5">
+      <Link
+        href="/dashboard/coupons"
+        className="mb-3 inline-flex items-center gap-1 text-sm text-gray-100 hover:text-brown-100"
       >
-        <h2
+        <ArrowLeft className="size-4" />
+        กลับไปจัดการคูปอง
+      </Link>
+      <div className="rounded-md border border-gray-200 bg-white p-4 md:p-5">
+        <h1
           id="coupon-add-codes-title"
           className="text-xl font-bold text-defualt-text"
         >
           เพิ่มโค้ดคูปอง
-        </h2>
+        </h1>
         <p className="mt-1 text-sm text-gray-100">
           เพิ่มโค้ดให้คูปอง <span className="font-medium">{coupon.name}</span>{" "}
           (ปัจจุบัน {formatNumber(coupon.available_code_count)} /{" "}
@@ -322,14 +344,12 @@ export default function CouponAddCodesModal({
           {error ? <p className="text-sm text-red-100">{error}</p> : null}
 
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={closeModal}
-              className="w-full cursor-pointer rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80 disabled:cursor-not-allowed disabled:opacity-60"
+            <Link
+              href="/dashboard/coupons"
+              className="inline-flex w-full items-center justify-center rounded-4xl bg-gray-10 px-3 py-2 text-sm font-medium text-gray-100 transition hover:bg-gray-10/80"
             >
               ยกเลิก
-            </button>
+            </Link>
             <button
               type="submit"
               disabled={isSubmitting}
