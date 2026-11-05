@@ -28,7 +28,7 @@ export function TableSkeleton({
 }: TableSkeletonProps) {
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-base">
+      <table className="min-w-full text-left text-sm">
         {showHeader ? (
           <thead className="border-b border-gray-200 bg-gray-10">
             <tr>
