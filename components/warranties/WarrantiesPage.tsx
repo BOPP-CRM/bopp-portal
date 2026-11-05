@@ -3,7 +3,7 @@
 import StatusBadge from "@/components/warranties/StatusBadge";
 import WarrantyDetailModal from "@/components/warranties/WarrantyDetailModal";
 import MemberAvatar from "@/components/members/MemberAvatar";
-import ActionMenu from "@/components/util/ActionMenu";
+import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import {
   getWarranties,
@@ -16,7 +16,6 @@ import { displayValue, formatNumber } from "@/utils/format";
 import {
   ChevronLeft,
   ChevronRight,
-  Eye,
   Search,
   Settings,
 } from "lucide-react";
@@ -126,8 +125,8 @@ export default function WarrantiesPage() {
           </p>
         </div>
 
-        <div className="flex w-full flex-col gap-3 md:max-w-xl md:flex-row md:items-center">
-          <form onSubmit={handleSearch} className="relative w-full md:flex-1">
+        <div className="flex w-full flex-wrap items-center gap-3 md:max-w-3xl md:justify-end">
+          <form onSubmit={handleSearch} className="relative min-w-56 flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
             <input
               type="search"
@@ -154,22 +153,14 @@ export default function WarrantiesPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {statusTabs.map((tab) => (
-          <button
-            key={String(tab.value)}
-            type="button"
-            onClick={() => setStatusFilter(tab.value)}
-            className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
-              statusFilter === tab.value
-                ? "bg-brown-100 text-white"
-                : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <FilterBar>
+        <FilterGroup
+          ariaLabel="สถานะรับประกัน"
+          options={statusTabs}
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
+      </FilterBar>
 
       <p className="mb-4 text-sm text-gray-100">
         ทั้งหมด {formatNumber(total)} รายการ
@@ -210,14 +201,14 @@ export default function WarrantiesPage() {
                     <th className="px-4 py-4 font-medium whitespace-nowrap">
                       วันที่ส่ง
                     </th>
-                    <th className="px-4 py-4 font-medium" />
                   </tr>
                 </thead>
                 <tbody>
                   {warranties.map((warranty) => (
                     <tr
                       key={warranty.id}
-                      className="border-b border-gray-200 last:border-b-0"
+                      onClick={() => setSelectedWarrantyId(warranty.id)}
+                      className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                     >
                       <td className="px-4 py-4 font-medium text-defualt-text">
                         {warranty.serial_number}
@@ -242,11 +233,6 @@ export default function WarrantiesPage() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-gray-100">
                         {formatDateTime(warranty.submitted_date)}
-                      </td>
-                      <td className="px-4 py-4">
-                        <WarrantyActionsMenu
-                          onOpen={() => setSelectedWarrantyId(warranty.id)}
-                        />
                       </td>
                     </tr>
                   ))}
@@ -309,6 +295,7 @@ function MemberCell({ user }: { user: PortalWarranty["user"] }) {
       <div className="min-w-0">
         <Link
           href={`/dashboard/members/${user.id}`}
+          onClick={(event) => event.stopPropagation()}
           className="block truncate font-medium text-defualt-text hover:text-brown-100"
         >
           {user.display_name}
@@ -321,21 +308,6 @@ function MemberCell({ user }: { user: PortalWarranty["user"] }) {
   );
 }
 
-function WarrantyActionsMenu({ onOpen }: { onOpen: () => void }) {
-  return (
-    <ActionMenu
-      ariaLabel="ดูรายละเอียดการรับประกัน"
-      items={[
-        {
-          label: "ดูรายละเอียด",
-          icon: <Eye className="size-4" />,
-          onClick: onOpen,
-        },
-      ]}
-    />
-  );
-}
-
 function WarrantyCard({
   warranty,
   onOpen,
@@ -344,7 +316,18 @@ function WarrantyCard({
   onOpen: () => void;
 }) {
   return (
-    <div className="space-y-4 p-4">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="cursor-pointer space-y-4 p-4 transition-colors hover:bg-gray-10"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-semibold text-defualt-text">
@@ -354,10 +337,7 @@ function WarrantyCard({
             {formatDateTime(warranty.submitted_date)}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <StatusBadge status={warranty.status} />
-          <WarrantyActionsMenu onOpen={onOpen} />
-        </div>
+        <StatusBadge status={warranty.status} />
       </div>
 
       <MemberCell user={warranty.user} />

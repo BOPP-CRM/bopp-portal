@@ -3,9 +3,9 @@
 import CreateInviteModal from "@/components/team/CreateInviteModal";
 import CreateTeamUserModal from "@/components/team/CreateTeamUserModal";
 import EditTeamUserModal from "@/components/team/EditTeamUserModal";
+import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
-import Select from "@/components/util/Select";
 import {
   cancelTeamInvite,
   getTeamInvites,
@@ -21,7 +21,6 @@ import {
   ChevronRight,
   Copy,
   Link2,
-  Pencil,
   Search,
   UserPlus,
   X,
@@ -209,69 +208,49 @@ export default function TeamPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setTab("users")}
-          className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
-            tab === "users"
-              ? "bg-brown-100 text-white"
-              : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
-          }`}
-        >
-          สมาชิกทีม
-        </button>
-        <button
-          type="button"
-          onClick={() => setTab("invites")}
-          className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
-            tab === "invites"
-              ? "bg-brown-100 text-white"
-              : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
-          }`}
-        >
-          คำเชิญ
-        </button>
-      </div>
+      <FilterBar>
+        <FilterGroup
+          ariaLabel="รายการทีม"
+          options={[
+            { value: "users", label: "สมาชิกทีม" },
+            { value: "invites", label: "คำเชิญ" },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+        {tab === "users" ? (
+          <FilterGroup
+            label="สถานะ"
+            options={activeFilterOptions}
+            value={activeFilter}
+            onChange={setActiveFilter}
+          />
+        ) : (
+          <FilterGroup
+            label="สถานะคำเชิญ"
+            options={inviteStateOptions}
+            value={inviteStateFilter}
+            onChange={setInviteStateFilter}
+          />
+        )}
+      </FilterBar>
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-gray-100">
           ทั้งหมด {formatNumber(total)} รายการ
         </p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {tab === "users" ? (
-            <>
-              <form
-                onSubmit={handleSearch}
-                className="relative w-full sm:max-w-xs"
-              >
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
-                <input
-                  type="search"
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  placeholder="ค้นหาชื่อ, อีเมล..."
-                  className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
-                />
-              </form>
-              <div className="w-full sm:max-w-xs">
-                <Select
-                  value={activeFilter}
-                  options={activeFilterOptions}
-                  onChange={setActiveFilter}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="w-full sm:max-w-xs">
-              <Select
-                value={inviteStateFilter}
-                options={inviteStateOptions}
-                onChange={setInviteStateFilter}
-              />
-            </div>
-          )}
-        </div>
+        {tab === "users" ? (
+          <form onSubmit={handleSearch} className="relative w-full sm:max-w-xs">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="ค้นหาชื่อ, อีเมล..."
+              className="w-full rounded-xl border border-gray-200 bg-white py-3 pr-4 pl-10 text-sm outline-none focus:border-brown-100"
+            />
+          </form>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
@@ -351,14 +330,14 @@ function UsersTable({
             <th className="px-4 py-4 font-medium">Role</th>
             <th className="px-4 py-4 font-medium">สถานะ</th>
             <th className="px-4 py-4 font-medium">วันที่สร้าง</th>
-            <th className="px-4 py-4 font-medium" />
           </tr>
         </thead>
         <tbody>
           {users.map((user) => (
             <tr
               key={user.id}
-              className="border-b border-gray-200 last:border-b-0"
+              onClick={() => onEdit(user)}
+              className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
             >
               <td className="px-4 py-4 font-medium text-defualt-text">
                 {user.name}
@@ -380,18 +359,6 @@ function UsersTable({
               </td>
               <td className="px-4 py-4 text-gray-100">
                 {formatDateTime(user.create_date)}
-              </td>
-              <td className="px-4 py-4">
-                <ActionMenu
-                  ariaLabel={`ตัวเลือกผู้ใช้ ${user.name}`}
-                  items={[
-                    {
-                      label: "แก้ไข",
-                      icon: <Pencil className="size-4" />,
-                      onClick: () => onEdit(user),
-                    },
-                  ]}
-                />
               </td>
             </tr>
           ))}

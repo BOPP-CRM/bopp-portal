@@ -1,6 +1,5 @@
 "use client";
 
-import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import WarrantyProductModal, {
   formatSnPatterns,
@@ -15,7 +14,7 @@ import {
 } from "@/services/warranties/warranties";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
-import { ArrowLeft, Pencil, Plus } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -144,14 +143,14 @@ export default function WarrantyProductsPage() {
                   <th className="px-4 py-3 font-medium">รูปแบบ SN</th>
                   <th className="px-4 py-3 font-medium">ราคาทุน</th>
                   <th className="px-4 py-3 font-medium">ราคาขาย</th>
-                  <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody>
                 {products.map((product) => (
                   <tr
                     key={product.id}
-                    className="border-b border-gray-200 last:border-b-0"
+                    onClick={() => openEditModal(product)}
+                    className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-3">
                       <ProductImage src={product.image_url} alt={product.name} />
@@ -168,18 +167,6 @@ export default function WarrantyProductsPage() {
                     </td>
                     <td className="px-4 py-3 text-defualt-text">
                       {formatNumber(product.sell_price)}
-                    </td>
-                    <td className="px-4 py-3">
-                      <ActionMenu
-                        ariaLabel="จัดการสินค้า"
-                        items={[
-                          {
-                            label: "แก้ไข",
-                            icon: <Pencil className="size-4" />,
-                            onClick: () => openEditModal(product),
-                          },
-                        ]}
-                      />
                     </td>
                   </tr>
                 ))}

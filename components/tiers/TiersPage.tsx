@@ -2,13 +2,12 @@
 
 import TierFormModal from "@/components/tiers/TierFormModal";
 import JoinRewardsModal from "@/components/tiers/JoinRewardsModal";
-import ActionMenu from "@/components/util/ActionMenu";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { getTier, getTiers } from "@/services/tiers/tiers";
 import type { PortalTier } from "@/services/tiers/types";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
-import { Gift, Pencil, Plus } from "lucide-react";
+import { Gift, Plus } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 export default function TiersPage() {
@@ -19,7 +18,6 @@ export default function TiersPage() {
   const [modalTier, setModalTier] = useState<PortalTier | null | undefined>(
     undefined,
   );
-  const [editingTierId, setEditingTierId] = useState<number | null>(null);
   const [showJoinRewards, setShowJoinRewards] = useState(false);
 
   const loadTiers = useCallback(async () => {
@@ -46,14 +44,11 @@ export default function TiersPage() {
   };
 
   const openEditModal = async (tierId: number) => {
-    setEditingTierId(tierId);
     try {
       const tier = await getTier(tierId);
       setModalTier(tier);
     } catch (loadError) {
       setError(handleError(loadError).message);
-    } finally {
-      setEditingTierId(null);
     }
   };
 
@@ -107,7 +102,7 @@ export default function TiersPage() {
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <TableSkeleton rows={5} columns={7} />
+          <TableSkeleton rows={5} columns={6} />
         ) : error ? (
           <div className="p-6 text-sm text-red-100">{error}</div>
         ) : tiers.length === 0 ? (
@@ -123,14 +118,14 @@ export default function TiersPage() {
                   <th className="px-4 py-4 font-medium">แปลง Point</th>
                   <th className="px-4 py-4 font-medium">รางวัล</th>
                   <th className="px-4 py-4 font-medium">แสดงใน UI</th>
-                  <th className="px-4 py-4 font-medium" />
                 </tr>
               </thead>
               <tbody>
                 {tiers.map((tier) => (
                   <tr
                     key={tier.id}
-                    className="border-b border-gray-200 last:border-b-0"
+                    onClick={() => void openEditModal(tier.id)}
+                    className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -164,22 +159,6 @@ export default function TiersPage() {
                       >
                         {tier.is_show_in_ui ? "แสดง" : "ซ่อน"}
                       </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <ActionMenu
-                        ariaLabel={`ตัวเลือกระดับ ${tier.name}`}
-                        items={[
-                          {
-                            label:
-                              editingTierId === tier.id
-                                ? "กำลังโหลด..."
-                                : "แก้ไข",
-                            icon: <Pencil className="size-4" />,
-                            disabled: editingTierId === tier.id,
-                            onClick: () => void openEditModal(tier.id),
-                          },
-                        ]}
-                      />
                     </td>
                   </tr>
                 ))}

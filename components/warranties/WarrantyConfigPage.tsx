@@ -170,6 +170,12 @@ export default function WarrantyConfigPage() {
             ) : (
               <ConfigTable
                 headers={["ชื่อ", "ลำดับ", ""]}
+                onRowClick={(index) =>
+                  setEditTarget({
+                    type: "contributor",
+                    item: contributors[index],
+                  })
+                }
                 rows={contributors.map((contributor) => [
                   contributor.name,
                   String(contributor.sequence ?? 10),
@@ -198,6 +204,9 @@ export default function WarrantyConfigPage() {
             ) : (
               <ConfigTable
                 headers={["Code", "Label", "สถานะ", "Default", ""]}
+                onRowClick={(index) =>
+                  setEditTarget({ type: "status", item: statuses[index] })
+                }
                 rows={statuses.map((status) => [
                   status.code,
                   status.label,
@@ -266,9 +275,11 @@ function ConfigSection({
 function ConfigTable({
   headers,
   rows,
+  onRowClick,
 }: {
   headers: string[];
   rows: React.ReactNode[][];
+  onRowClick?: (index: number) => void;
 }) {
   return (
     <div className="overflow-x-auto">
@@ -286,7 +297,12 @@ function ConfigTable({
           {rows.map((row, index) => (
             <tr
               key={index}
-              className="border-b border-gray-200 last:border-b-0"
+              onClick={onRowClick ? () => onRowClick(index) : undefined}
+              className={`border-b border-gray-200 last:border-b-0 ${
+                onRowClick
+                  ? "cursor-pointer transition-colors hover:bg-gray-10"
+                  : ""
+              }`}
             >
               {row.map((cell, cellIndex) => (
                 <td key={cellIndex} className="px-3 py-3 text-defualt-text">

@@ -152,7 +152,8 @@ export default function CouponsPage() {
                 {coupons.map((coupon) => (
                   <tr
                     key={coupon.id}
-                    className="border-b border-gray-200 last:border-b-0"
+                    onClick={() => void openEditModal(coupon.id)}
+                    className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">

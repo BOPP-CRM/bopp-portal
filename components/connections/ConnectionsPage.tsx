@@ -5,6 +5,7 @@ import LazadaPanel from "@/components/connections/LazadaPanel";
 import OpenAiPanel from "@/components/connections/OpenAiPanel";
 import ZortoutPanel from "@/components/connections/ZortoutPanel";
 import OmisellPanel from "./OmisellPanel";
+import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -64,22 +65,14 @@ export default function ConnectionsPage() {
         </p>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => selectTab(item.id)}
-            className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
-              tab === item.id
-                ? "bg-brown-100 text-white"
-                : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <FilterBar>
+        <FilterGroup
+          ariaLabel="การเชื่อมต่อ"
+          options={TABS.map((item) => ({ value: item.id, label: item.label }))}
+          value={tab}
+          onChange={selectTab}
+        />
+      </FilterBar>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {tab === "bopp-mcp" ? <BoppMcpPanel /> : null}

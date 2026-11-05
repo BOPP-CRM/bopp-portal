@@ -1,9 +1,8 @@
 "use client";
 
 import RedeemQrcodeFormModal from "@/components/redeem-qrcodes/RedeemQrcodeFormModal";
-import ActionMenu from "@/components/util/ActionMenu";
+import FilterGroup from "@/components/util/FilterGroup";
 import { TableSkeleton } from "@/components/util/Skeleton";
-import Select from "@/components/util/Select";
 import {
   getRedeemQrcode,
   getRedeemQrcodes,
@@ -12,7 +11,7 @@ import type { PortalRedeemQrcode } from "@/services/redeem-qrcodes/types";
 import { formatDateTime, isApiDateAfterNow } from "@/utils/datetime";
 import { handleError } from "@/utils/errors";
 import { formatNumber } from "@/utils/format";
-import { ChevronLeft, ChevronRight, Pencil, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 const PAGE_SIZE = 20;
@@ -30,7 +29,6 @@ export default function RedeemQrcodesPage() {
   const [modalQrcode, setModalQrcode] = useState<
     PortalRedeemQrcode | null | undefined
   >(undefined);
-  const [editingQrcodeId, setEditingQrcodeId] = useState<number | null>(null);
 
   const activeParam = useMemo(() => {
     if (activeFilter === "active") return true;
@@ -86,14 +84,11 @@ export default function RedeemQrcodesPage() {
   };
 
   const openEditModal = async (qrcodeId: number) => {
-    setEditingQrcodeId(qrcodeId);
     try {
       const qrcode = await getRedeemQrcode(qrcodeId);
       setModalQrcode(qrcode);
     } catch (loadError) {
       setError(handleError(loadError).message);
-    } finally {
-      setEditingQrcodeId(null);
     }
   };
 
@@ -158,19 +153,18 @@ export default function RedeemQrcodesPage() {
       ) : null}
 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <FilterGroup
+          ariaLabel="สถานะ Redeem QR"
+          options={filterOptions}
+          value={activeFilter}
+          onChange={setActiveFilter}
+        />
         <p className="text-sm text-gray-100">ทั้งหมด {formatNumber(total)} รายการ</p>
-        <div className="w-full sm:max-w-xs">
-          <Select
-            value={activeFilter}
-            options={filterOptions}
-            onChange={setActiveFilter}
-          />
-        </div>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <TableSkeleton rows={6} columns={7} />
+          <TableSkeleton rows={6} columns={6} />
         ) : error ? (
           <div className="p-6 text-sm text-red-100">{error}</div>
         ) : qrcodes.length === 0 ? (
@@ -186,14 +180,14 @@ export default function RedeemQrcodesPage() {
                   <th className="px-4 py-4 font-medium">จำกัด</th>
                   <th className="px-4 py-4 font-medium">หมดอายุ</th>
                   <th className="px-4 py-4 font-medium">สถานะ</th>
-                  <th className="px-4 py-4 font-medium" />
                 </tr>
               </thead>
               <tbody>
                 {qrcodes.map((qrcode) => (
                   <tr
                     key={qrcode.id}
-                    className="border-b border-gray-200 last:border-b-0"
+                    onClick={() => void openEditModal(qrcode.id)}
+                    className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
                       <p className="font-medium text-defualt-text">{qrcode.name}</p>
@@ -223,22 +217,6 @@ export default function RedeemQrcodesPage() {
                       >
                         {isActive(qrcode) ? "ใช้งาน" : "ไม่ใช้งาน"}
                       </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <ActionMenu
-                        ariaLabel={`ตัวเลือก Redeem QR ${qrcode.name}`}
-                        items={[
-                          {
-                            label:
-                              editingQrcodeId === qrcode.id
-                                ? "กำลังโหลด..."
-                                : "แก้ไข",
-                            icon: <Pencil className="size-4" />,
-                            disabled: editingQrcodeId === qrcode.id,
-                            onClick: () => void openEditModal(qrcode.id),
-                          },
-                        ]}
-                      />
                     </td>
                   </tr>
                 ))}

@@ -1,6 +1,7 @@
 "use client";
 
 import AppearanceTab from "@/components/partner/AppearanceTab";
+import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { getPartner } from "@/services/partner/partner";
 import type { PartnerAd, PartnerDetail, PartnerUi } from "@/services/partner/types";
@@ -68,22 +69,14 @@ export default function PartnerPage() {
         </p>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => setTab(item.id)}
-            className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
-              tab === item.id
-                ? "bg-brown-100 text-white"
-                : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      <FilterBar>
+        <FilterGroup
+          ariaLabel="ข้อมูล Partner"
+          options={TABS.map((item) => ({ value: item.id, label: item.label }))}
+          value={tab}
+          onChange={setTab}
+        />
+      </FilterBar>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (

@@ -144,7 +144,10 @@ export default function ActionMenu({
         aria-expanded={isOpen}
         aria-controls={menuId}
         aria-label={ariaLabel}
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setIsOpen((prev) => !prev);
+        }}
         className={`inline-flex cursor-pointer items-center justify-center rounded-full border p-2 transition ${
           isOpen
             ? "border-brown-100 bg-brown-yellow-5 text-brown-100"

@@ -21,7 +21,7 @@ import {
   formatNumber,
   getDefaultPointBalance,
 } from "@/utils/format";
-import { ChevronLeft, ChevronRight, Eye, RefreshCw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -212,14 +212,15 @@ export default function MembersPage() {
                     <th className="px-4 py-4 font-medium">Zortout</th>
                   ) : null}
                   <th className="px-4 py-4 font-medium">วันที่สมัคร</th>
-                  <th className="px-4 py-4 font-medium" />
+                  {zortoutReady ? <th className="px-4 py-4 font-medium" /> : null}
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
                   <tr
                     key={user.id}
-                    className="border-b border-gray-200 last:border-b-0"
+                    onClick={() => router.push(`/dashboard/members/${user.id}`)}
+                    className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                   >
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -257,36 +258,28 @@ export default function MembersPage() {
                     <td className="px-4 py-4 text-gray-100">
                       {formatDateTime(user.create_date)}
                     </td>
-                    <td className="px-4 py-4 text-sm">
-                      <ActionMenu
-                        ariaLabel={`ตัวเลือกสมาชิก ${user.display_name}`}
-                        items={[
-                          {
-                            label: "ดูรายละเอียด",
-                            icon: <Eye className="size-4" />,
-                            onClick: () =>
-                              router.push(`/dashboard/members/${user.id}`),
-                          },
-                          ...(zortoutReady
-                            ? [
-                                {
-                                  label:
-                                    syncingUserId === user.id
-                                      ? "กำลัง sync..."
-                                      : "Sync",
-                                  icon: (
-                                    <RefreshCw
-                                      className={`size-2 ${syncingUserId === user.id ? "animate-spin" : ""}`}
-                                    />
-                                  ),
-                                  onClick: () => void handleSyncUser(user),
-                                  disabled: syncingUserId === user.id,
-                                },
-                              ]
-                            : []),
-                        ]}
-                      />
-                    </td>
+                    {zortoutReady ? (
+                      <td className="px-4 py-4 text-sm">
+                        <ActionMenu
+                          ariaLabel={`ตัวเลือกสมาชิก ${user.display_name}`}
+                          items={[
+                            {
+                              label:
+                                syncingUserId === user.id
+                                  ? "กำลัง sync..."
+                                  : "Sync",
+                              icon: (
+                                <RefreshCw
+                                  className={`size-2 ${syncingUserId === user.id ? "animate-spin" : ""}`}
+                                />
+                              ),
+                              onClick: () => void handleSyncUser(user),
+                              disabled: syncingUserId === user.id,
+                            },
+                          ]}
+                        />
+                      </td>
+                    ) : null}
                   </tr>
                 ))}
               </tbody>

@@ -15,7 +15,7 @@ import {
   getZortoutSaleSyncProgress,
   useZortoutSaleSyncJob,
 } from "@/components/sales/useZortoutSaleSyncJob";
-import ActionMenu from "@/components/util/ActionMenu";
+import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import { TableSkeleton } from "@/components/util/Skeleton";
 import { useApp } from "@/providers/app-provider";
 import {
@@ -39,7 +39,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Eye,
   Loader2,
   RefreshCw,
   Search,
@@ -275,7 +274,7 @@ export default function SalesPage() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex w-full flex-wrap items-center justify-end gap-3">
           {canSync ? (
             <button
               type="button"
@@ -329,7 +328,7 @@ export default function SalesPage() {
             </button>
           ) : null}
 
-          <form onSubmit={handleSearch} className="relative w-full md:max-w-sm">
+          <form onSubmit={handleSearch} className="relative w-full min-w-56 sm:max-w-sm">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-gray-100" />
             <input
               type="search"
@@ -450,43 +449,24 @@ export default function SalesPage() {
         </div>
       ) : null}
 
-      <div className="mb-4 flex flex-wrap gap-2">
-        {statusTabs.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setStatusFilter(tab.value)}
-            className={`cursor-pointer rounded-4xl px-4 py-2 text-sm font-medium transition ${
-              statusFilter === tab.value
-                ? "bg-brown-100 text-white"
-                : "border border-gray-200 bg-white text-defualt-text hover:bg-gray-10"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        {sourceTabs.map((tab) => (
-          <button
-            key={tab.value}
-            type="button"
-            onClick={() => setSourceFilter(tab.value)}
-            className={`cursor-pointer rounded-4xl px-3 py-1.5 text-xs font-medium transition ${
-              sourceFilter === tab.value
-                ? "bg-brown-yellow-5 text-brown-100"
-                : "border border-gray-200 bg-white text-gray-100 hover:bg-gray-10"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <FilterBar>
+        <FilterGroup
+          label="สถานะ"
+          options={statusTabs}
+          value={statusFilter}
+          onChange={setStatusFilter}
+        />
+        <FilterGroup
+          label="แหล่งที่มา"
+          options={sourceTabs}
+          value={sourceFilter}
+          onChange={setSourceFilter}
+        />
+      </FilterBar>
 
       <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
         {loading ? (
-          <TableSkeleton rows={6} columns={8} />
+          <TableSkeleton rows={6} columns={7} />
         ) : error || syncJobError || receiptSyncJobError ? (
           <div className="p-6 text-sm text-red-100">
             {error || syncJobError || receiptSyncJobError}
@@ -522,14 +502,14 @@ export default function SalesPage() {
                       ยอดรวม
                     </th>
                     <th className="px-4 py-4 font-medium">สถานะ</th>
-                    <th className="px-4 py-4 font-medium" />
                   </tr>
                 </thead>
                 <tbody>
                   {sales.map((sale) => (
                     <tr
                       key={sale.id}
-                      className="border-b border-gray-200 last:border-b-0"
+                      onClick={() => setSelectedSaleId(sale.id)}
+                      className="cursor-pointer border-b border-gray-200 transition-colors last:border-b-0 hover:bg-gray-10"
                     >
                       <td className="max-w-[160px] truncate px-4 py-4 font-medium text-defualt-text">
                         {displayValue(sale.order_number || sale.external_id)}
@@ -558,18 +538,6 @@ export default function SalesPage() {
                       </td>
                       <td className="px-4 py-4">
                         <StatusBadge status={sale.status} />
-                      </td>
-                      <td className="px-4 py-4">
-                        <ActionMenu
-                          ariaLabel="ดูรายละเอียดการขาย"
-                          items={[
-                            {
-                              label: "ดูรายละเอียด",
-                              icon: <Eye className="size-4" />,
-                              onClick: () => setSelectedSaleId(sale.id),
-                            },
-                          ]}
-                        />
                       </td>
                     </tr>
                   ))}
@@ -652,6 +620,7 @@ function MemberCell({ user }: { user: SaleMember }) {
       <div className="min-w-0">
         <Link
           href={`/dashboard/members/${user.id}`}
+          onClick={(event) => event.stopPropagation()}
           className="block truncate font-medium text-defualt-text hover:text-brown-100"
         >
           {user.display_name}
@@ -672,7 +641,18 @@ function SaleCard({
   onOpen: () => void;
 }) {
   return (
-    <div className="space-y-4 p-4">
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="cursor-pointer space-y-4 p-4 transition-colors hover:bg-gray-10"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate font-semibold text-defualt-text">
@@ -682,19 +662,7 @@ function SaleCard({
             {displayValue(sale.order_date)}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <StatusBadge status={sale.status} />
-          <ActionMenu
-            ariaLabel="ดูรายละเอียดการขาย"
-            items={[
-              {
-                label: "ดูรายละเอียด",
-                icon: <Eye className="size-4" />,
-                onClick: onOpen,
-              },
-            ]}
-          />
-        </div>
+        <StatusBadge status={sale.status} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
