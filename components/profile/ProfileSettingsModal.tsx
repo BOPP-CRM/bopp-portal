@@ -4,6 +4,7 @@ import { updateMe } from "@/services/auth/auth";
 import type { PortalMeResponse } from "@/services/auth/types";
 import { handleError } from "@/utils/errors";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 const MODAL_EXIT_MS = 250;
 
@@ -110,9 +111,9 @@ export default function ProfileSettingsModal({
     }
   };
 
-  return (
+  return createPortal(
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-gray-300/50 p-4 ${
+      className={`fixed inset-0 z-70 flex items-center justify-center bg-gray-300/50 p-4 ${
         isClosing
           ? "opacity-0 transition-opacity duration-250 ease-in"
           : "animate-dialog-backdrop-in"
@@ -203,7 +204,8 @@ export default function ProfileSettingsModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
