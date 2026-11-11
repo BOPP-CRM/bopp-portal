@@ -1,9 +1,13 @@
 "use client";
 
 import AppearanceTab from "@/components/partner/AppearanceTab";
+<<<<<<< HEAD
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import TableExport from "@/components/util/TableExport";
 import { compactTableClassName } from "@/components/util/data-table";
+=======
+import RegistrationFormTab from "@/components/partner/RegistrationFormTab";
+>>>>>>> caa9c64 (feat: add partner registration form settings tab)
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { getPartner } from "@/services/partner/partner";
 import type { PartnerAd, PartnerDetail, PartnerUi } from "@/services/partner/types";
@@ -17,11 +21,12 @@ import { Copy } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import QRCode from "react-qr-code";
 
-type Tab = "general" | "ui" | "line" | "ads" | "tiers";
+type Tab = "general" | "ui" | "registration" | "line" | "ads" | "tiers";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "general", label: "ทั่วไป" },
   { id: "ui", label: "ธีม UI" },
+  { id: "registration", label: "ฟอร์มสมัครสมาชิก" },
   { id: "line", label: "LINE" },
   { id: "ads", label: "โฆษณา" },
   { id: "tiers", label: "ระดับสมาชิก" },
@@ -89,6 +94,7 @@ export default function PartnerPage() {
           <>
             {tab === "general" ? <GeneralTab partner={partner} /> : null}
             {tab === "ui" ? <AppearanceTab ui={partner.ui} /> : null}
+            {tab === "registration" ? <RegistrationFormTab /> : null}
             {tab === "line" ? <LineTab line={partner.line} /> : null}
             {tab === "ads" ? <AdsTab ads={partner.ads} /> : null}
             {tab === "tiers" ? <TiersTab tiers={partner.tier} /> : null}

@@ -192,6 +192,20 @@ export default function MemberDetailPage({ userId }: MemberDetailPageProps) {
               value={formatUserAddress(user.address)}
               className="sm:col-span-2"
             />
+            {Object.entries(user.custom_fields || {}).map(([key, value]) => (
+              <InfoItem
+                key={key}
+                label={`ฟิลด์เพิ่มเติม (${key})`}
+                value={displayValue(
+                  typeof value === "string" || typeof value === "number"
+                    ? String(value)
+                    : value == null
+                      ? false
+                      : JSON.stringify(value),
+                )}
+                className="sm:col-span-2"
+              />
+            ))}
           </dl>
 
           {zortoutReady ? (
