@@ -5,6 +5,7 @@ import {
   getRegistrationFields,
   updateRegistrationFields,
   type RegistrationField,
+  type RegistrationFieldOption,
   type RegistrationFieldType,
 } from "@/services/partner/registration-fields";
 import { handleError } from "@/utils/errors";
@@ -55,6 +56,115 @@ function slugifyKey(label: string) {
   return base || `custom_${Date.now().toString(36)}`;
 }
 
+function optionValueFromLabel(label: string, used: Set<string>) {
+  const trimmed = label.trim();
+  let value = slugifyKey(trimmed);
+  if (!value || value.startsWith("custom_")) {
+    value = `option_${Date.now().toString(36)}`;
+  }
+  if (!used.has(value)) return value;
+  let i = 2;
+  while (used.has(`${value}_${i}`)) i += 1;
+  return `${value}_${i}`;
+}
+
+function SelectOptionsEditor({
+  options,
+  disabled,
+  onChange,
+}: {
+  options: RegistrationFieldOption[];
+  disabled?: boolean;
+  onChange: (options: RegistrationFieldOption[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const addOption = () => {
+    const label = draft.trim();
+    if (!label || disabled) return;
+    const used = new Set(options.map((option) => option.value));
+    const value = optionValueFromLabel(label, used);
+    onChange([...options, { value, label }]);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-xs text-gray-100">ตัวเลือก</label>
+      {options.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-gray-200 bg-white px-4 py-3 text-sm text-gray-100">
+          ยังไม่มีตัวเลือก กดเพิ่มด้านล่าง
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {options.map((option, index) => (
+            <div key={`${option.value}-${index}`} className="flex gap-2">
+              <input
+                className={inputClassName}
+                value={option.label}
+                disabled={disabled}
+                placeholder="ชื่อตัวเลือก"
+                onChange={(event) => {
+                  const label = event.target.value;
+                  const next = options.map((item, itemIndex) =>
+                    itemIndex === index
+                      ? {
+                          ...item,
+                          label,
+                          // Keep value in sync when it was created from the label.
+                          value:
+                            item.value === item.label
+                              ? label.trim() || item.value
+                              : item.value,
+                        }
+                      : item,
+                  );
+                  onChange(next);
+                }}
+              />
+              <button
+                type="button"
+                aria-label="ลบตัวเลือก"
+                disabled={disabled}
+                onClick={() =>
+                  onChange(options.filter((_, itemIndex) => itemIndex !== index))
+                }
+                className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-xl border border-red-100 px-3 text-red-100 hover:bg-red-100/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Trash2 className="size-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <input
+          className={inputClassName}
+          value={draft}
+          disabled={disabled}
+          placeholder="พิมพ์ตัวเลือกใหม่"
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              addOption();
+            }
+          }}
+        />
+        <button
+          type="button"
+          disabled={disabled || !draft.trim()}
+          onClick={addOption}
+          className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1 rounded-4xl border border-brown-100 px-4 py-2 text-sm font-medium text-brown-100 hover:bg-brown-yellow-5 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Plus className="size-4" />
+          เพิ่มตัวเลือก
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function RegistrationFormTab() {
   const [fields, setFields] = useState<RegistrationField[]>([]);
   const [configured, setConfigured] = useState(false);
@@ -66,7 +176,7 @@ export default function RegistrationFormTab() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newType, setNewType] = useState<RegistrationFieldType>("text");
-  const [newOptionsText, setNewOptionsText] = useState("");
+  const [newOptions, setNewOptions] = useState<RegistrationFieldOption[]>([]);
   const [newRequired, setNewRequired] = useState(false);
 
   const load = useCallback(async () => {
@@ -129,6 +239,14 @@ export default function RegistrationFormTab() {
     );
   };
 
+  const resetAddModal = () => {
+    setShowAddModal(false);
+    setNewLabel("");
+    setNewType("text");
+    setNewOptions([]);
+    setNewRequired(false);
+  };
+
   const handleAddField = () => {
     const label = newLabel.trim();
     if (!label) {
@@ -143,16 +261,16 @@ export default function RegistrationFormTab() {
 
     const options =
       newType === "select"
-        ? newOptionsText
-            .split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .map((line) => {
-              const [value, ...rest] = line.split("|");
-              const optionValue = value.trim();
-              const optionLabel = (rest.join("|").trim() || optionValue).trim();
-              return { value: optionValue, label: optionLabel };
-            })
+        ? newOptions
+            .map((option) => ({
+              value: option.value.trim(),
+              label: option.label.trim(),
+            }))
+            .filter((option) => option.label)
+            .map((option) => ({
+              value: option.value || option.label,
+              label: option.label,
+            }))
         : [];
 
     if (newType === "select" && options.length === 0) {
@@ -173,11 +291,7 @@ export default function RegistrationFormTab() {
         options,
       },
     ]);
-    setShowAddModal(false);
-    setNewLabel("");
-    setNewType("text");
-    setNewOptionsText("");
-    setNewRequired(false);
+    resetAddModal();
     setError(null);
   };
 
@@ -280,6 +394,7 @@ export default function RegistrationFormTab() {
           type="button"
           onClick={() => {
             setShowAddModal(true);
+            setNewOptions([]);
             setError(null);
           }}
           className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-4xl border border-brown-100 px-4 py-2 text-sm font-medium text-brown-100 hover:bg-brown-yellow-5"
@@ -346,37 +461,10 @@ export default function RegistrationFormTab() {
 
                 {field.field_type === "select" ? (
                   <div className="md:col-span-2">
-                    <label className="mb-1 block text-xs text-gray-100">
-                      ตัวเลือก (บรรทัดละ 1 ค่า หรือ value|label)
-                    </label>
-                    <textarea
-                      className={`${inputClassName} min-h-24`}
+                    <SelectOptionsEditor
+                      options={field.options || []}
                       disabled={isSaving}
-                      value={(field.options || [])
-                        .map((option) =>
-                          option.label === option.value
-                            ? option.value
-                            : `${option.value}|${option.label}`,
-                        )
-                        .join("\n")}
-                      onChange={(event) => {
-                        const options = event.target.value
-                          .split("\n")
-                          .map((line) => line.trim())
-                          .filter(Boolean)
-                          .map((line) => {
-                            const [value, ...rest] = line.split("|");
-                            const optionValue = value.trim();
-                            const optionLabel = (
-                              rest.join("|").trim() || optionValue
-                            ).trim();
-                            return {
-                              value: optionValue,
-                              label: optionLabel,
-                            };
-                          });
-                        updateField(field.key, { options });
-                      }}
+                      onChange={(options) => updateField(field.key, { options })}
                     />
                   </div>
                 ) : null}
@@ -455,7 +543,7 @@ export default function RegistrationFormTab() {
       {showAddModal ? (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={() => setShowAddModal(false)}
+          onClick={resetAddModal}
         >
           <div
             role="dialog"
@@ -483,9 +571,11 @@ export default function RegistrationFormTab() {
                 <select
                   className={inputClassName}
                   value={newType}
-                  onChange={(event) =>
-                    setNewType(event.target.value as RegistrationFieldType)
-                  }
+                  onChange={(event) => {
+                    const nextType = event.target.value as RegistrationFieldType;
+                    setNewType(nextType);
+                    if (nextType !== "select") setNewOptions([]);
+                  }}
                 >
                   {CUSTOM_TYPE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -495,17 +585,10 @@ export default function RegistrationFormTab() {
                 </select>
               </div>
               {newType === "select" ? (
-                <div>
-                  <label className="mb-1 block text-xs text-gray-100">
-                    ตัวเลือก (บรรทัดละ 1 ค่า)
-                  </label>
-                  <textarea
-                    className={`${inputClassName} min-h-24`}
-                    value={newOptionsText}
-                    onChange={(event) => setNewOptionsText(event.target.value)}
-                    placeholder={"full_time|เต็มเวลา\npart_time|พาร์ทไทม์"}
-                  />
-                </div>
+                <SelectOptionsEditor
+                  options={newOptions}
+                  onChange={setNewOptions}
+                />
               ) : null}
               <label className="inline-flex items-center gap-2 text-sm text-defualt-text">
                 <input
@@ -520,7 +603,7 @@ export default function RegistrationFormTab() {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setShowAddModal(false)}
+                onClick={resetAddModal}
                 className="cursor-pointer rounded-4xl border border-gray-200 px-4 py-2 text-sm text-defualt-text"
               >
                 ยกเลิก
