@@ -1,13 +1,10 @@
 "use client";
 
 import AppearanceTab from "@/components/partner/AppearanceTab";
-<<<<<<< HEAD
+import RegistrationFormTab from "@/components/partner/RegistrationFormTab";
 import FilterGroup, { FilterBar } from "@/components/util/FilterGroup";
 import TableExport from "@/components/util/TableExport";
 import { compactTableClassName } from "@/components/util/data-table";
-=======
-import RegistrationFormTab from "@/components/partner/RegistrationFormTab";
->>>>>>> caa9c64 (feat: add partner registration form settings tab)
 import { ContentSkeleton } from "@/components/util/Skeleton";
 import { getPartner } from "@/services/partner/partner";
 import type { PartnerAd, PartnerDetail, PartnerUi } from "@/services/partner/types";
