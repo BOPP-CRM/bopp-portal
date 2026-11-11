@@ -31,6 +31,7 @@ export type PortalUser = {
   birth_date: string | false;
   gender: string | false;
   address: string | false;
+  custom_fields?: Record<string, unknown>;
   tier: PortalTier;
   points: PortalUserPoint[];
   create_date: string;

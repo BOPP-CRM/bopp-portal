@@ -35,6 +35,7 @@ export type PortalReceipt = {
   state: ReceiptState;
   reward_points: number;
   tier_convert_points: number;
+  earn_channel?: "receipt" | "zortout" | "omisell";
   tier: ReceiptTier;
   user: ReceiptUser;
   reviewed_by: ReceiptReviewer | string | false;
