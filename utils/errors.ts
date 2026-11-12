@@ -1,12 +1,68 @@
 import dialog from "@/components/util/dialog";
 import axios from "axios";
-import Swal from "sweetalert2";
 
 export type AppError = {
   message: string;
   status?: number;
+  traceId?: string;
   raw: unknown;
 };
+
+const TRACE_ID_HEADER = "x-trace-id";
+const TRACE_ID_PATTERN = /^[0-9a-f]{32}$/i;
+
+const traceReference = (traceId: string) => `(รหัสอ้างอิง: ${traceId})`;
+
+function withTraceReference(message: string, traceId?: string) {
+  if (!traceId) return message;
+  const suffix = ` ${traceReference(traceId)}`;
+  return message.endsWith(suffix) ? message : `${message}${suffix}`;
+}
+
+function withoutTraceReference(message: string, traceId?: string) {
+  if (!traceId) return message;
+  const suffix = ` ${traceReference(traceId)}`;
+  return message.endsWith(suffix) ? message.slice(0, -suffix.length) : message;
+}
+
+function headerStrings(value: unknown): string[] {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => headerStrings(entry));
+  }
+
+  return [];
+}
+
+function readHeader(headers: unknown, name: string): string | undefined {
+  if (!headers || typeof headers !== "object") return undefined;
+
+  const record = headers as {
+    get?: (headerName: string) => unknown;
+  } & Record<string, unknown>;
+
+  const candidates: string[] = [];
+
+  if (typeof record.get === "function") {
+    candidates.push(...headerStrings(record.get(name)));
+  }
+
+  for (const [key, value] of Object.entries(record)) {
+    if (key.toLowerCase() === name) {
+      candidates.push(...headerStrings(value));
+    }
+  }
+
+  return candidates.find((candidate) => TRACE_ID_PATTERN.test(candidate));
+}
+
+export function readTraceId(headers: unknown): string | undefined {
+  return readHeader(headers, TRACE_ID_HEADER);
+}
 
 const isAppError = (error: unknown): error is AppError => {
   if (typeof error !== "object" || error === null) {
@@ -48,7 +104,16 @@ export function handleError(error: unknown): AppError {
               ? "เซิร์ฟเวอร์มีปัญหา กรุณาลองใหม่อีกครั้ง"
               : `Request failed with status ${status}.`);
 
-    return { message, status, raw: error };
+    const traceId = error.response
+      ? readTraceId(error.response.headers)
+      : undefined;
+
+    return {
+      message: withTraceReference(message, traceId),
+      status,
+      traceId,
+      raw: error,
+    };
   }
 
   if (error instanceof Error) {
@@ -59,13 +124,15 @@ export function handleError(error: unknown): AppError {
 }
 
 export async function showErrorAlert(error: unknown, title = "เกิดข้อผิดพลาด") {
-  const { message } = handleError(error);
+  const appError = handleError(error);
+  const { traceId } = appError;
 
   dialog.fire({
-    title,
-    description: message,
+    title: traceId ? `${title} (รหัสอ้างอิง: ${traceId})` : title,
+    description: withoutTraceReference(appError.message, traceId),
     confirmText: "ตกลง",
     confirmVariant: "danger",
     showCancel: false,
+    traceId,
   });
 }
