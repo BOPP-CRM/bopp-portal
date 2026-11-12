@@ -11,6 +11,7 @@ export interface DialogFireOptions {
   confirmVariant?: ButtonVariant;
   icon?: ReactNode;
   showCancel?: boolean;
+  traceId?: string;
   onCancel?: () => void;
   onConfirm?: () => void;
 }

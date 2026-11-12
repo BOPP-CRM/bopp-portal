@@ -25,6 +25,7 @@ export default function DialogHost() {
       confirmText={options.confirmText}
       confirmVariant={options.confirmVariant}
       showCancel={options.showCancel}
+      traceId={options.traceId}
       onCancel={options.onCancel ?? (() => closeDialog(false))}
       onConfirm={options.onConfirm ?? (() => closeDialog(true))}
     />

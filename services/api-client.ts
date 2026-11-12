@@ -52,6 +52,13 @@ class ApiClient {
       async (error: unknown) => {
         const appError = handleError(error);
 
+        if (appError.traceId) {
+          console.error(
+            `API error (รหัสอ้างอิง: ${appError.traceId})`,
+            error,
+          );
+        }
+
         if (appError.status === 401) {
           clearToken();
         }

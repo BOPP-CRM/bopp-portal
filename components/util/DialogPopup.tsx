@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { Copy } from "lucide-react";
 import Button from "./Button";
 import type { ButtonVariant } from "./dialog";
 
@@ -15,9 +16,62 @@ interface DialogPopupProps {
   onCancel: () => void;
   onConfirm: () => void;
   showCancel?: boolean;
+  traceId?: string;
 }
 
 export const DIALOG_EXIT_ANIMATION_MS = 250;
+
+function CopyTraceIdButton({ traceId }: { traceId: string }) {
+  const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
+
+  const onCopy = async () => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(traceId);
+      } else {
+        const field = document.createElement("textarea");
+        field.value = traceId;
+        field.setAttribute("readonly", "");
+        field.style.position = "fixed";
+        field.style.left = "-9999px";
+        document.body.appendChild(field);
+        field.select();
+        const copied = document.execCommand("copy");
+        field.remove();
+        if (!copied) {
+          setStatus("failed");
+          return;
+        }
+      }
+      setStatus("copied");
+    } catch {
+      setStatus("failed");
+    }
+  };
+
+  const label =
+    status === "copied"
+      ? "คัดลอกแล้ว"
+      : status === "failed"
+        ? "ไม่สามารถคัดลอกได้"
+        : "คัดลอกรหัสอ้างอิง";
+
+  return (
+    <div className="mt-3 flex justify-center">
+      <button
+        type="button"
+        onClick={() => {
+          void onCopy();
+        }}
+        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-brown-100 hover:bg-gray-10"
+        aria-label="คัดลอกรหัสอ้างอิง"
+      >
+        <Copy className="size-3.5" aria-hidden="true" />
+        <span aria-live="polite">{label}</span>
+      </button>
+    </div>
+  );
+}
 
 export default function DialogPopup({
   icon,
@@ -28,6 +82,7 @@ export default function DialogPopup({
   confirmText = "ยืนยัน",
   confirmVariant = "danger",
   showCancel = true,
+  traceId,
   onCancel,
   onConfirm,
 }: DialogPopupProps) {
@@ -68,7 +123,11 @@ export default function DialogPopup({
         role="dialog"
         aria-modal="true"
         aria-labelledby="dialog-title"
-        className={`rounded-4xl bg-white p-6 min-w-[363px] shadow-[0_4px_10px_0_rgba(0,0,0,0.1)]${
+        className={`rounded-4xl bg-white p-6 shadow-[0_4px_10px_0_rgba(0,0,0,0.1)] ${
+          traceId
+            ? "w-[min(28rem,calc(100vw-2rem))]"
+            : "min-w-[363px]"
+        }${
           isClosing
             ? " opacity-0 scale-95 translate-y-2 transition-all duration-250 ease-in"
             : " animate-dialog-pop-in"
@@ -88,13 +147,16 @@ export default function DialogPopup({
         )}
         <div
           id="dialog-title"
-          className="text-defualt-text font-bold text-xl text-center mt-4"
+          className="text-defualt-text font-bold text-xl text-center mt-4 wrap-break-word"
         >
           {title}
         </div>
-        <div className="text-gray-100 mt-2 text-md text-center">
+        <div className="text-gray-100 mt-2 text-center text-md wrap-break-word">
           {description}
         </div>
+        {traceId ? (
+          <CopyTraceIdButton key={traceId} traceId={traceId} />
+        ) : null}
         <div className="mt-4 flex flex-row gap-4">
           {showCancel && (
             <Button variant="tertiary" text={cancelText} onClick={onCancel} />
